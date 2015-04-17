@@ -13,7 +13,7 @@ class Main {
 		
 	public static void main(String args[]) throws IOException {
 		
-		String URL = "http://www.skyscanner.it/trasporti/voli/lond/rome/voli-economici-da-londra-per-roma.html?rtn=1";
+		String URL = "http://www.skyscanner.it/trasporti/voli/bgy/mad/150610/150615/tariffe-aeree-da-milano-bergamo-orio-al-serio-per-madrid-a-giugno-2015.html?adults=1&children=0&infants=0&cabinclass=economy&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&rtn=1&PageSpeed=noscript";
 		
 		
 		//A list of Elements, with methods that act on every element in the list.
