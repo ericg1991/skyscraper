@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.logging.LogFactory;
 import org.jsoup.Jsoup;
@@ -79,15 +80,15 @@ class Main {
 		}
 		
 		// save all contents
-		PrintWriter wr = new PrintWriter("PageAsXml.html");
+		PrintWriter wr = new PrintWriter("Page1AsXml.html");
 		wr.println(page.asXml());
 		wr.close();
 		
-		PrintWriter wr1 = new PrintWriter("PageAsText.txt");
+		PrintWriter wr1 = new PrintWriter("Page1AsText.txt");
 		wr1.println(page.asText());
 		wr1.close();
 		
-		File input = new File("/Users/Eric/Documents/workspace/ProvaSkyScrape/PageAsXml.html");
+		File input = new File("/Users/Eric/Documents/workspace/ProvaSkyScrape/Page1AsXml.html");
 		Document doc = Jsoup.parse(input, "UTF-8", "http://skyscanner.it/");		
 		
 		PrintWriter writer = new PrintWriter("agencies.txt");
@@ -105,14 +106,15 @@ class Main {
 		ArrayList<String> timelistback = new ArrayList<String>();
 		ArrayList<String> bestagencieslist = new ArrayList<String>();
 		ArrayList<String> bestagenciespriceslist = new ArrayList<String>();
-		ArrayList<String> flightslist = new ArrayList<String>();
+		
 		
 		int b=0;
 		int i;
 		int j;
 		int t;
 		
-		//creo una lista di elementi che sono i voli (non serve posso stampare direttamente)
+//		//creo una lista di elementi che sono i voli (non serve posso stampare direttamente)
+//		ArrayList<String> flightslist = new ArrayList<String>();
 //		for (Element el : flights) {
 //			flightslist.add(el.text());
 //		}
@@ -161,29 +163,59 @@ class Main {
 			// scrive di ogni possibile volo l'agenzia che offre il prezzo migliore
 			writer.println("Agencies selling this flight are:");
 			writer.println("> " + bestagencieslist.get(i) + " " + bestagenciespriceslist.get(i));
-			//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore			
-			for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
-//				String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
-//				writer.println("> " + words[0] + " " + words[1] + " " + words[2]);
-				writer.println("> " + otheragencies.get(i).select("a").get(j).text());
-			}
+			//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
+			//!PROBLEMA! devo fare un controllo perchè a volte non esistono ota che offrano lo stesso volo a un prezzo maggiore rispetto alla migliore !ATTENZIONE!
+	//		if(otheragencies.get(i).children().isEmpty()==false){
+				for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
+					//provo a fare la split della stringa ma non funziona, mi stampa il primo elemento ma non gli altri
+//					String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
+//					writer.println("> " + words[0] + " " + words[1] + " " + words[2]);
+					writer.println("> " + otheragencies.get(i).select("a").get(j).text());
+				}
+			//}
+			
 			writer.println();
 		}
-	
-	
+		
+	//salva le altre pagine successive alla prima in formato html di cui dovrò fare lo scraping
+		   List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
+		   int u=2;
+		   while( elements.isEmpty()==false){
+              HtmlElement element1 = elements.get(0);
+              page = element1.click();
+              timeToWait = 3;
+              while (manager.getJobCount() > 0) {
+      			timeToWait--;
+      			System.out.println(timeToWait + " seconds left... ("
+      					+ manager.getJobCount() + " jobs left)\n");
+      			try {
+      				Thread.sleep(1000);
+      			} catch (InterruptedException e) {
+      				e.printStackTrace();
+      				}
+      			if (timeToWait <= 0)
+      				break;
+      		  }
+              
+            PrintWriter wr3 = new PrintWriter("Page" + u + "AsXml.html");
+      		wr3.println(page.asXml());
+      		wr3.close();
+      		elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
+      		u++;
+		   }
 		writer.close();
 		
-		// save just the div "content-main"
-		HtmlDivision div = page.getHtmlElementById("content-main");
-		div.asText();
-
-		wr = new PrintWriter("DivAsXml.txt");
-		wr.println(div.asXml());
-		wr.close();
-
-		wr = new PrintWriter("DivAsText.txt");
-		wr.println(div.asText());
-		wr.close();
+//		// save just the div "content-main"
+//		HtmlDivision div = page.getHtmlElementById("content-main");
+//		div.asText();
+//
+//		wr = new PrintWriter("DivAsXml.txt");
+//		wr.println(div.asXml());
+//		wr.close();
+//
+//		wr = new PrintWriter("DivAsText.txt");
+//		wr.println(div.asText());
+//		wr.close();
 
 		webClient.close();
 
