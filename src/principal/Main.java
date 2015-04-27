@@ -87,7 +87,7 @@ class Main {
 		PrintWriter wr1 = new PrintWriter("Page1AsText.txt");
 		wr1.println(page.asText());
 		wr1.close();
-		
+		//ATTENZIONE! qui il percorso cambia a seconda di dove vado a salvare in locale il file html preso da internet
 		File input = new File("/Users/Eric/Documents/workspace/ProvaSkyScrape/Page1AsXml.html");
 		Document doc = Jsoup.parse(input, "UTF-8", "http://skyscanner.it/");		
 		
@@ -99,7 +99,7 @@ class Main {
 		arrivaltime = doc.select("div.arrive");
 		bestagencies = doc.select("div.mainquote-wrapper.clearfix").select("a.ticketing-agent.mainquote-agent");
 		bestagenciesprices = doc.select("div.mainquote-wrapper.clearfix").select("a.mainquote-price.big");
-		otheragencies = doc.select("div.details-group-altquotes-wrapper").select("ul");
+		otheragencies = doc.select("div.details-group.clearfix");
 		
 		//dichiaro le liste che servono per salvarvi all'interno le informazioni necessarie poi alla stampa a schermo
 		ArrayList<String> timelistgo = new ArrayList<String>();
@@ -165,14 +165,13 @@ class Main {
 			writer.println("> " + bestagencieslist.get(i) + " " + bestagenciespriceslist.get(i));
 			//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
 			//!PROBLEMA! devo fare un controllo perchè a volte non esistono ota che offrano lo stesso volo a un prezzo maggiore rispetto alla migliore !ATTENZIONE!
-	//		if(otheragencies.get(i).children().isEmpty()==false){
+			if(otheragencies.get(i).select("a").size()!=0){
 				for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
-					//provo a fare la split della stringa ma non funziona, mi stampa il primo elemento ma non gli altri
 //					String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
 //					writer.println("> " + words[0] + " " + words[1] + " " + words[2]);
 					writer.println("> " + otheragencies.get(i).select("a").get(j).text());
 				}
-			//}
+			}
 			
 			writer.println();
 		}
@@ -223,3 +222,4 @@ class Main {
 
 	}
 }
+
