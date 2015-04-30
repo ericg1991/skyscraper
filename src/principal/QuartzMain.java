@@ -1,6 +1,7 @@
 package principal;
 
 
+
 import org.quartz.CronTrigger;
 import org.quartz.Job;
 import org.quartz.JobDetail;
@@ -20,15 +21,21 @@ import static org.quartz.SimpleScheduleBuilder.*;
 
 
 
-public class quartzlauncher {
+public class QuartzMain {
 	
-	public quartzlauncher() throws Exception{
+	public QuartzMain(String a, String b, String c, String d) throws Exception{
 		
 		SchedulerFactory sf = new StdSchedulerFactory();
 		Scheduler sched = sf.getScheduler();
-		JobDetail jd = newJob(Main.class)
+		JobDetail jd = newJob(Scraper.class)
 			    .withIdentity("job1", "group1")
 			    .build();
+		//per passare i parametri alla classe Scraper si fa così
+		jd.getJobDataMap().put("airport_part", a);
+		jd.getJobDataMap().put("airport_dest", b);
+		jd.getJobDataMap().put("datepart",c);
+		jd.getJobDataMap().put("daterit", d);
+		
 		Trigger ct = newTrigger()
 			    .withIdentity("trigger1", "group1")
 			    .startNow()
@@ -36,14 +43,19 @@ public class quartzlauncher {
 			            .withIntervalInSeconds(180)
 			            .repeatForever())
 			    .build();
-		
 		sched.scheduleJob(jd,ct);
 		sched.start();
 	}
 
-	public static void main(String[] Mel){
+	public static void main(String[] info){
+		//passo i parametri al metodo quartzmain che poi a sua volta li passa alla classe Scraper dove servono
+		String from = info[0];
+		String to = info[1];
+		String departure = info[2];
+		String arrival = info[3];
+		
 		try{
-			new quartzlauncher();
+			new QuartzMain(from,to,departure,arrival);
 		}
 		catch(Exception e){e.getStackTrace();}
 	}

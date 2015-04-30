@@ -1,5 +1,6 @@
 package principal;
 
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,8 +26,10 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
+import org.quartz.JobDataMap;
 
-public class Main implements Job {
+
+public class Scraper implements Job {
 
 	static {
 		// disable HtmlUnit logging
@@ -34,7 +37,7 @@ public class Main implements Job {
 				"org.apache.commons.logging.impl.NoOpLog");
 	}
 
-	public void execute(JobExecutionContext arg0) throws JobExecutionException {
+	public void execute(JobExecutionContext jeContext) throws JobExecutionException {
 		//parte il ciclo di interrogazione a skyscanner
 		System.out.println();
 		System.out.println("VIA!");
@@ -55,11 +58,13 @@ public class Main implements Job {
 		webClient.setRefreshHandler(new ThreadedRefreshHandler());
 		webClient.getCookieManager().setCookiesEnabled(true);
 		
-
-		String datepart = "150526";
-		String daterit = "150729";
-		String airport_part = "bgy";
-		String airport_dest = "mad";
+		 JobDataMap jdMap = jeContext.getJobDetail().getJobDataMap();
+		 String airport_part = jdMap.get("airport_part").toString();
+		 String airport_dest = jdMap.get("airport_dest").toString();
+		 String datepart = jdMap.get("datepart").toString();
+		 String daterit = jdMap.get("daterit").toString();
+	
+		
 		String URL = ("http://www.skyscanner.it/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
 		
 		Elements otheragencies = new Elements();
@@ -143,17 +148,21 @@ public class Main implements Job {
    		   elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
    		   u++;
 		   }
-			
+		   int p=u;
+		   while (new File("Page" + p + "AsXml.html").exists()){
+			   new File("Page" + p + "AsXml.html").delete();
+			   p++;
+		   }
 		//crea file di testo dove salverò tutti i risultati dell'attuale ricerca
 		PrintWriter writer = null;
 		try {
-			writer = new PrintWriter("agencies.txt");
+			writer = new PrintWriter("agencies - " + date.toString() + ".csv");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		   
-		//(queste probabilmente non sono necessarie e andranno tolte): dichiaro le liste che servono per salvarvi all'interno le informazioni necessarie poi alla stampa a schermo
+		//dichiaro le liste che servono per salvarvi all'interno le informazioni necessarie poi alla stampa a schermo
 		ArrayList<String> timelistgo = new ArrayList<String>();
 		ArrayList<String> timelistback = new ArrayList<String>();
 		ArrayList<String> bestagencieslist = new ArrayList<String>();
@@ -163,19 +172,19 @@ public class Main implements Job {
 		
 		int i;
 		int j;
-		int t;
 		int x=1;
-		int z=0;
 		
 		//scrive data e ora della query al sito
 				writer.println("Research time: " + date.toString());
-				writer.println();
 	
+		//intestazioni della tabella
+				writer.println("Flight;CityFrom;CityTo;DateFrom;DateTo;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
+				
 		//qui parte il ciclo per lo scraping, per ogni file che ho ne faccio lo scraping
 		while (new File("Page" + x + "AsXml.html").exists()){
 			
 			//ATTENZIONE! qui il percorso cambia a seconda di dove vado a salvare in locale il file html preso da internet
-			File input = new File("/Users/Eric/Documents/workspace/ProvaSkyScrape/Page" + x + "AsXml.html");
+			File input = new File("/Users/Eric/git/skyscraper/Page" + x + "AsXml.html");
 			Document doc = null;
 			try {
 				doc = Jsoup.parse(input, "UTF-8", "http://skyscanner.it/");
@@ -235,20 +244,27 @@ public class Main implements Job {
 
 			//estraggo le informazioni dagli elementi(o dalle liste che ho creato prima) e le stampo a schermo
 			
-			//scrive i voli disponibili per la tratta
-			writer.println("Flights with their information:");
-			writer.println();
 			for(i=0; i<flights.size(); i++){
-				z++;
-				writer.println(z + ". " + flights.get(i).text());
-				//scrive orari partenza di andata e ritorno allineati (con lista)
-				for (t=0; t<2; t++) {
-					writer.println(timelistgo.get(t).toString() + " -> " + timelistback.get(t));
-				}
+				//scrive nome volo
+				writer.print(flights.get(i).text() + ";");
+				writer.print(airport_part + ";");
+				writer.print(airport_dest + ";");
+				writer.print(datepart + ";");
+				writer.print(daterit + ";");
+				//scrive orari partenza di andata e ritorno
+					String[] wordsTgo1 = timelistgo.get(2*i).toString().split(" ");
+					String[] wordsTback1 = timelistback.get(2*i).toString().split(" ");
+					String[] wordsTgo2 = timelistgo.get(2*i+1).toString().split(" ");
+					String[] wordsTback2 = timelistback.get(2*i+1).toString().split(" ");
+					writer.print(wordsTgo1[0] + ";");
+					writer.print(wordsTback1[0] + ";");
+					writer.print(wordsTgo2[0] + ";");
+					writer.print(wordsTback2[0] + ";");
+				//scrive nome e prezzo bestagency per il volo
+				String[] wordsA = bestagenciespriceslist.get(i).split(" ");
+				writer.print(bestagencieslist.get(i) + ";");
+				writer.print(wordsA[0] + ";");
 				writer.println();
-				// scrive di ogni possibile volo l'agenzia che offre il prezzo migliore
-				writer.println("Agencies selling this flight are:");
-				writer.println("> " + bestagencieslist.get(i) + " " + bestagenciespriceslist.get(i));
 				//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
 				//prima faccio un controllo perchè potrebbero non esserci agenzie oltre la migliore che vendono lo stesso volo
 				if(otheragencies.get(i).select("a").size()!=0){
@@ -256,14 +272,28 @@ public class Main implements Job {
 						//splitto la stringa in modo da avere il nome dell'agenzia separato dal prezzo, inoltre anche perchè a volte nel box delle agenzie c'è anche un lufthansa senza prezzo, in questo modo faccio si che non venga introdotto nella lista delle ota
 						String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
 						if(words.length > 1){
-							//!!!stampa nome e prezzo..ma se volessi stampare anche il simbolo € non lo fa perchè dice che non esiste quell'elemento words[2]..forse non riconosce il simbolo €
-						writer.println("> " + words[0] + " " + words[1]);
-//						writer.println("> " + otheragencies.get(i).select("a").get(j).text());
+							//scrive nome volo,aeroporta andata, destinazione, giorno andata, giorno ritorno
+							writer.print(flights.get(i).text() + ";");
+							writer.print(airport_part + ";");
+							writer.print(airport_dest + ";");
+							writer.print(datepart + ";");
+							writer.print(daterit + ";");
+							//scrive orari partenza di andata e ritorno
+							String[] wordsTgo3 = timelistgo.get(2*i).toString().split(" ");
+							String[] wordsTback3 = timelistback.get(2*i).toString().split(" ");
+							String[] wordsTgo4 = timelistgo.get(2*i+1).toString().split(" ");
+							String[] wordsTback4 = timelistback.get(2*i+1).toString().split(" ");
+							writer.print(wordsTgo3[0] + ";");
+							writer.print(wordsTback3[0] + ";");
+							writer.print(wordsTgo4[0] + ";");
+							writer.print(wordsTback4[0] + ";");
+							//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
+							writer.print(words[0] + ";");
+							writer.print(words[1] + ";");
+							writer.println();
 						}
 					}
 				}
-				
-				writer.println();
 			}
 			
 			x++;
@@ -271,21 +301,11 @@ public class Main implements Job {
 			
 		writer.close();	
 		
-//		// save just the div "content-main"
-//		HtmlDivision div = page.getHtmlElementById("content-main");
-//		div.asText();
-//
-//		wr = new PrintWriter("DivAsXml.txt");
-//		wr.println(div.asXml());
-//		wr.close();
-//
-//		wr = new PrintWriter("DivAsText.txt");
-//		wr.println(div.asText());
-//		wr.close();
-
 		webClient.close();
 
 		System.out.println("Done.");
 
 	}
 }
+
+
