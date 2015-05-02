@@ -48,7 +48,7 @@ public class Scraper implements Job {
 		webClient.getOptions().setRedirectEnabled(true);
 		webClient.getOptions().setCssEnabled(true);
 		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-		webClient.getOptions().setThrowExceptionOnScriptError(true);
+		webClient.getOptions().setThrowExceptionOnScriptError(false);
 		webClient.getOptions().setUseInsecureSSL(true);
 		webClient.setAjaxController(new NicelyResynchronizingAjaxController());
 		webClient.waitForBackgroundJavaScriptStartingBefore(10000);
