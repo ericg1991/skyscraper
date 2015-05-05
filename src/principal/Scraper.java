@@ -26,6 +26,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
+
 import org.quartz.JobDataMap;
 
 
@@ -48,6 +49,7 @@ public class Scraper implements Job {
 		webClient.getOptions().setRedirectEnabled(true);
 		webClient.getOptions().setCssEnabled(true);
 		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		//posso mettere questo a false e non da più l'eccezione 
 		webClient.getOptions().setThrowExceptionOnScriptError(false);
 		webClient.getOptions().setUseInsecureSSL(true);
 		webClient.setAjaxController(new NicelyResynchronizingAjaxController());
@@ -79,7 +81,9 @@ public class Scraper implements Job {
 		try {
 			page = webClient.getPage(URL);
 		} catch (Exception e) {
+			System.out.println(URL);
 			System.out.println("Get page error");
+			System.out.println(e.toString());
 		}
 		JavaScriptJobManager manager = page.getEnclosingWindow()
 				.getJobManager();
@@ -184,7 +188,7 @@ public class Scraper implements Job {
 		while (new File("Page" + x + "AsXml.html").exists()){
 			
 			//ATTENZIONE! qui il percorso cambia a seconda di dove vado a salvare in locale il file html preso da internet
-			File input = new File("/Users/Eric/git/skyscraper/Page" + x + "AsXml.html");
+			File input = new File("Page" + x + "AsXml.html");
 			Document doc = null;
 			try {
 				doc = Jsoup.parse(input, "UTF-8", "http://skyscanner.it/");

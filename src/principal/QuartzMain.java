@@ -1,7 +1,5 @@
 package principal;
 
-
-
 import org.quartz.CronTrigger;
 import org.quartz.Job;
 import org.quartz.JobDetail;
@@ -23,7 +21,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
 
 public class QuartzMain {
 	
-	public QuartzMain(String a, String b, String c, String d) throws Exception{
+	public QuartzMain(String a, String b, String c, String d, int e) throws Exception{
 		
 		SchedulerFactory sf = new StdSchedulerFactory();
 		Scheduler sched = sf.getScheduler();
@@ -40,7 +38,7 @@ public class QuartzMain {
 			    .withIdentity("trigger1", "group1")
 			    .startNow()
 			    .withSchedule(simpleSchedule()
-			            .withIntervalInSeconds(180)
+			            .withIntervalInSeconds(e)
 			            .repeatForever())
 			    .build();
 		sched.scheduleJob(jd,ct);
@@ -53,9 +51,11 @@ public class QuartzMain {
 		String to = info[1];
 		String departure = info[2];
 		String arrival = info[3];
+		int time = Integer.parseInt(info[4]);
+	
 		
 		try{
-			new QuartzMain(from,to,departure,arrival);
+			new QuartzMain(from,to,departure,arrival,time);
 		}
 		catch(Exception e){e.getStackTrace();}
 	}
