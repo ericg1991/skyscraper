@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -65,6 +66,7 @@ public class Scraper implements Job {
 		 String airport_dest = jdMap.get("airport_dest").toString();
 		 String datepart = jdMap.get("datepart").toString();
 		 String daterit = jdMap.get("daterit").toString();
+		 int pagesNumber = (int) jdMap.get("pagesNumber");
 	
 		
 		String URL = ("http://www.skyscanner.it/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
@@ -117,50 +119,58 @@ public class Scraper implements Job {
 		// salvo tutte le pagine della ricerca in formato html, dopodichè in uno step successivo ne farò lo scraping
 		  
 		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
-		   int u=2;
-		   while( elements.isEmpty()==false){
-           HtmlElement element1 = elements.get(0);
-           try {
-			page = element1.click();
-		} catch (IOException e1) {
+		int u=2;
+		while( elements.isEmpty()==false && u<=pagesNumber ){
+			HtmlElement element1 = elements.get(0);
+			
+			try {
+				page = element1.click();
+			} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-		}
-           timeToWait = 3;
-	           while (manager.getJobCount() > 0) {
-	   			timeToWait--;
+			}
+			timeToWait = 3;
+	        while (manager.getJobCount() > 0) {
+	        	timeToWait--;
 	   			System.out.println(timeToWait + " seconds left... ("
 	   					+ manager.getJobCount() + " jobs left)\n");
 	   			try {
 	   				Thread.sleep(1000);
 	   			} catch (InterruptedException e) {
 	   				e.printStackTrace();
-	   				}
-	   			if (timeToWait <= 0)
+	   			}
+	   			if (timeToWait <= 0) {
 	   				break;
-	   		  }
-           
-           PrintWriter wr3 = null;
-		try {
-			wr3 = new PrintWriter("Page" + u + "AsXml.html");
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	   			}
+	   				
+	        }
+	        PrintWriter wr3 = null;
+	        try {
+	        	wr3 = new PrintWriter("Page" + u + "AsXml.html");
+	        } catch (FileNotFoundException e) {
+	        	// TODO Auto-generated catch block
+	        	e.printStackTrace();
+	        }
+	        wr3.println(page.asXml());
+	        wr3.close();
+	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
+	        u++;
 		}
-           wr3.println(page.asXml());
-   		   wr3.close();
-   		   elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Pagina successiva\"]");
-   		   u++;
-		   }
-		   int p=u;
-		   while (new File("Page" + p + "AsXml.html").exists()){
-			   new File("Page" + p + "AsXml.html").delete();
-			   p++;
-		   }
+		int p=u;
+		while (new File("Page" + p + "AsXml.html").exists()){
+			new File("Page" + p + "AsXml.html").delete();
+			p++;
+		}
+		
 		//crea file di testo dove salverò tutti i risultati dell'attuale ricerca
 		PrintWriter writer = null;
 		try {
-			writer = new PrintWriter("agencies - " + date.toString() + ".csv");
+			String dateToString = date.toString();
+			String fileName;
+			dateToString = dateToString.replaceAll(":", ".");
+			dateToString = dateToString.replaceAll("/", ".");
+			fileName = airport_part + "_" + airport_dest + "_" + datepart + "_" + daterit + "_" + dateToString;
+			writer = new PrintWriter(fileName + ".csv");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

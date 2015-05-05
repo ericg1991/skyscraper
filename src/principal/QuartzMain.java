@@ -21,7 +21,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
 
 public class QuartzMain {
 	
-	public QuartzMain(String a, String b, String c, String d, int e) throws Exception{
+	public QuartzMain(String a, String b, String c, String d, int e, int f) throws Exception{
 		
 		SchedulerFactory sf = new StdSchedulerFactory();
 		Scheduler sched = sf.getScheduler();
@@ -33,12 +33,13 @@ public class QuartzMain {
 		jd.getJobDataMap().put("airport_dest", b);
 		jd.getJobDataMap().put("datepart",c);
 		jd.getJobDataMap().put("daterit", d);
+		jd.getJobDataMap().put("pagesNumber", e);
 		
 		Trigger ct = newTrigger()
 			    .withIdentity("trigger1", "group1")
 			    .startNow()
 			    .withSchedule(simpleSchedule()
-			            .withIntervalInSeconds(e)
+			            .withIntervalInSeconds(f)
 			            .repeatForever())
 			    .build();
 		sched.scheduleJob(jd,ct);
@@ -51,11 +52,12 @@ public class QuartzMain {
 		String to = info[1];
 		String departure = info[2];
 		String arrival = info[3];
-		int time = Integer.parseInt(info[4]);
+		int pagesNumber = Integer.parseInt(info[4]);
+		int time = Integer.parseInt(info[5]);
 	
 		
 		try{
-			new QuartzMain(from,to,departure,arrival,time);
+			new QuartzMain(from,to,departure,arrival,pagesNumber,time);
 		}
 		catch(Exception e){e.getStackTrace();}
 	}
