@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -67,7 +66,13 @@ public class Scraper implements Job {
 		 String datepart = jdMap.get("datepart").toString();
 		 String daterit = jdMap.get("daterit").toString();
 		 int pagesNumber = (int) jdMap.get("pagesNumber");
-	
+
+		 System.out.println("Ricerca per aeroporto di partenza: "+ airport_part);
+		 System.out.println("Ricerca per aeroporto di destinazione: "+ airport_dest);
+		 System.out.println("Ricerca per data di partenza: "+ datepart);
+		 System.out.println("Ricerca per aeroporto di ritorno: "+ daterit);
+		 System.out.println("Pagine richieste: " + pagesNumber);
+		 System.out.println();
 		
 		String URL = ("http://www.skyscanner.it/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
 		
@@ -266,14 +271,14 @@ public class Scraper implements Job {
 				writer.print(datepart + ";");
 				writer.print(daterit + ";");
 				//scrive orari partenza di andata e ritorno
-					String[] wordsTgo1 = timelistgo.get(2*i).toString().split(" ");
-					String[] wordsTback1 = timelistback.get(2*i).toString().split(" ");
-					String[] wordsTgo2 = timelistgo.get(2*i+1).toString().split(" ");
-					String[] wordsTback2 = timelistback.get(2*i+1).toString().split(" ");
-					writer.print(wordsTgo1[0] + ";");
-					writer.print(wordsTback1[0] + ";");
-					writer.print(wordsTgo2[0] + ";");
-					writer.print(wordsTback2[0] + ";");
+				String[] wordsTgo1 = timelistgo.get(2*i).toString().split(" ");
+				String[] wordsTback1 = timelistback.get(2*i).toString().split(" ");
+				String[] wordsTgo2 = timelistgo.get(2*i+1).toString().split(" ");
+				String[] wordsTback2 = timelistback.get(2*i+1).toString().split(" ");
+				writer.print(wordsTgo1[0] + ";");
+				writer.print(wordsTback1[0] + ";");
+				writer.print(wordsTgo2[0] + ";");
+				writer.print(wordsTback2[0] + ";");
 				//scrive nome e prezzo bestagency per il volo
 				String[] wordsA = bestagenciespriceslist.get(i).split(" ");
 				writer.print(bestagencieslist.get(i) + ";");
@@ -285,7 +290,7 @@ public class Scraper implements Job {
 					for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
 						//splitto la stringa in modo da avere il nome dell'agenzia separato dal prezzo, inoltre anche perchè a volte nel box delle agenzie c'è anche un lufthansa senza prezzo, in questo modo faccio si che non venga introdotto nella lista delle ota
 						String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
-						if(words.length > 1){
+						if(words.length > 2){
 							//scrive nome volo,aeroporta andata, destinazione, giorno andata, giorno ritorno
 							writer.print(flights.get(i).text() + ";");
 							writer.print(airport_part + ";");
@@ -304,6 +309,7 @@ public class Scraper implements Job {
 							//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
 							writer.print(words[0] + ";");
 							writer.print(words[1] + ";");
+							
 							writer.println();
 						}
 					}
