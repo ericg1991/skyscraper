@@ -36,7 +36,7 @@ public class Scraper implements Job {
 	public void execute(JobExecutionContext jeContext) throws JobExecutionException {
 		//parte il ciclo di interrogazione a skyscanner
 		System.out.println();
-		System.out.println("VIA!");
+		System.out.println("GO!");
 		System.out.println();
 		
 		WebClient webClient = new WebClient(BrowserVersion.FIREFOX_31);
@@ -132,7 +132,7 @@ public class Scraper implements Job {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			}
-			timeToWait = 3;
+			timeToWait = 5;
 	        while (manager.getJobCount() > 0) {
 	        	timeToWait--;
 	   			System.out.println(timeToWait + " seconds left... ("
@@ -217,7 +217,7 @@ public class Scraper implements Job {
 		writer.println("Research time: " + date.toString());
 	
 		//intestazioni della tabella
-		writer.println("Flight;DepartureAirportGo;StopsGo;ArrivalAirportGo;StopsBack;DepartureAirportBack;ArrivalAirportBack;DateFrom;DateTo;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
+		writer.println("Flight;DepartureAirportGo;StopsGo;ArrivalAirportGo;DepartureAirportBack;StopsBack;ArrivalAirportBack;DateGo;DateBack;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
 				
 		//qui parte il ciclo per lo scraping, per ogni file che ho ne faccio lo scraping
 		while (new File("Page" + x + "AsXml.html").exists()){
@@ -250,9 +250,9 @@ public class Scraper implements Job {
 			
 			//salvo gli element appropriati all'interno delle liste di elements (prendo gli elementi dalla pagina html) da cui poi prenderÃ² le informazioni che mi servono
 			flights = doc.getElementsByClass("airline");
-			//Il formato che ottengo con go è ORA AEROPORTO per l'andata
+			//Il formato che ottengo con go ï¿½ ORA AEROPORTO per l'andata
 			depart = doc.select("div.depart");
-			//Il formato che ottengo con go è ORA AEROPORTO per il ritorno
+			//Il formato che ottengo con go ï¿½ ORA AEROPORTO per il ritorno
 			arrive = doc.select("div.arrive");
 			bestagencies = doc.select("div.mainquote-wrapper.clearfix").select("a.ticketing-agent.mainquote-agent");
 			bestagenciesprices = doc.select("div.mainquote-wrapper.clearfix").select("a.mainquote-price.big");
@@ -309,12 +309,12 @@ public class Scraper implements Job {
 				writer.print(departureAirportGo + ";");
 				
 				//SCALI
-				//Il formato della stringa per gli scali può essere
+				//Il formato della stringa per gli scali puï¿½ essere
 				//In caso di nessun scalo DIRETTO
-				//In caso di 1 o più scali # SCALO LISTA_DI_CITTA'
+				//In caso di 1 o piï¿½ scali # SCALO LISTA_DI_CITTA'
 				stopsGoWords = stops.get(2*i).text().toString().split(" ");		
 				stopsGo = "";				
-				//Nel caso in cui c'è almeno uno scalo vai a prendere dalla terza parola in poi
+				//Nel caso in cui c'ï¿½ almeno uno scalo vai a prendere dalla terza parola in poi
 				if (stopsGoWords.length != 1) {
 					for(k=2; k<stopsGoWords.length; k++) {
 						stopsGo = stopsGo + stopsGoWords[k] + " ";
@@ -410,8 +410,8 @@ public class Scraper implements Job {
 							writer.print(departureTimeBack + ";");
 							writer.print(arrivalTimeBack + ";");
 							//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
-							//Ci può essere il caso in cui il nome di un aagenzia sia composto da diverse parole divise da uno spazio
-							//Il formato della stringa è NOME_OTA PREZZO €
+							//Ci puï¿½ essere il caso in cui il nome di un aagenzia sia composto da diverse parole divise da uno spazio
+							//Il formato della stringa ï¿½ NOME_OTA PREZZO ï¿½
 							price = words[lenghtWords-2];
 							ota = "";
 							for (k=0; k<(lenghtWords-2); k++) {
