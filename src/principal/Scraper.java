@@ -1,6 +1,5 @@
 package principal;
 
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,7 +7,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import org.apache.commons.logging.LogFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,7 +15,6 @@ import org.jsoup.select.Elements;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -26,9 +23,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
-
 import org.quartz.JobDataMap;
-
 
 public class Scraper implements Job {
 
@@ -80,8 +75,11 @@ public class Scraper implements Job {
 		Elements bestagenciesprices = new Elements();
 		Elements bestagencies = new Elements();
 		Elements flights = new Elements();
-		Elements departuretime = new Elements();
-		Elements arrivaltime = new Elements();
+		Elements depart = new Elements();
+		Elements arrive = new Elements();
+		Elements stops = new Elements();
+		Elements check = new Elements();
+		
 		Date date = new Date();
 		
 		HtmlPage page = null;
@@ -182,27 +180,48 @@ public class Scraper implements Job {
 		}
 		   
 		//dichiaro le liste che servono per salvarvi all'interno le informazioni necessarie poi alla stampa a schermo
-		ArrayList<String> timelistgo = new ArrayList<String>();
-		ArrayList<String> timelistback = new ArrayList<String>();
+		ArrayList<String> departList = new ArrayList<String>();
+		ArrayList<String> arriveList = new ArrayList<String>();
 		ArrayList<String> bestagencieslist = new ArrayList<String>();
 		ArrayList<String> bestagenciespriceslist = new ArrayList<String>();
+		String[] departureGoWords;
+		String[] arrivalGoWords;
+		String[] departureBackWords;
+		String[] arrivalBackWords;
+		String[] stopsGoWords;
+		String[] stopsBackWords;
+		String departureAirportGo;
+		String departureAirportBack;
+		String arrivalAirportGo;
+		String arrivalAirportBack;
+		String departureTimeGo;
+		String departureTimeBack;
+		String arrivalTimeGo;
+		String arrivalTimeBack;
+		String stopsGo;
+		String stopsBack;
+		String price;
+		String ota;
+		String airlineCompany;
 		
 		//variabili necessarie per ciclare etc.
 		
 		int i;
 		int j;
+		int k;
 		int x=1;
+		int doublebookings = 0;
+		int lenghtWords;
 		
 		//scrive data e ora della query al sito
-				writer.println("Research time: " + date.toString());
+		writer.println("Research time: " + date.toString());
 	
 		//intestazioni della tabella
-				writer.println("Flight;CityFrom;CityTo;DateFrom;DateTo;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
+		writer.println("Flight;DepartureAirportGo;StopsGo;ArrivalAirportGo;StopsBack;DepartureAirportBack;ArrivalAirportBack;DateFrom;DateTo;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
 				
 		//qui parte il ciclo per lo scraping, per ogni file che ho ne faccio lo scraping
 		while (new File("Page" + x + "AsXml.html").exists()){
 			
-			//ATTENZIONE! qui il percorso cambia a seconda di dove vado a salvare in locale il file html preso da internet
 			File input = new File("Page" + x + "AsXml.html");
 			Document doc = null;
 			try {
@@ -214,41 +233,48 @@ public class Scraper implements Job {
 			
 			//elimino gli elementi precedentemente messi nella lista in modo da non creare problemi per la nuova scrittura
 			flights.clear();
-			departuretime.clear();
-			arrivaltime.clear();
+			depart.clear();
+			arrive.clear();
 			bestagencies.clear();
 			bestagenciesprices.clear();
 			otheragencies.clear();
-			
-			timelistgo.clear();
-			timelistback.clear();
+			departList.clear();
+			arriveList.clear();
 			bestagencieslist.clear();
 			bestagenciespriceslist.clear();
+			stops.clear();
+			check.clear();
 			
 			int b=0;
+			doublebookings = 0;
 			
 			//salvo gli element appropriati all'interno delle liste di elements (prendo gli elementi dalla pagina html) da cui poi prenderÃ² le informazioni che mi servono
 			flights = doc.getElementsByClass("airline");
-			departuretime = doc.select("div.depart");
-			arrivaltime = doc.select("div.arrive");
+			//Il formato che ottengo con go è ORA AEROPORTO per l'andata
+			depart = doc.select("div.depart");
+			//Il formato che ottengo con go è ORA AEROPORTO per il ritorno
+			arrive = doc.select("div.arrive");
 			bestagencies = doc.select("div.mainquote-wrapper.clearfix").select("a.ticketing-agent.mainquote-agent");
 			bestagenciesprices = doc.select("div.mainquote-wrapper.clearfix").select("a.mainquote-price.big");
 			otheragencies = doc.select("div.details-group.clearfix");
+			//Salvo tutti gli scali
+			stops = doc.select("div.leg-stops");
+			check = doc.select("div.mainquote-wrapper.clearfix");
 			
 			//creo una lista con tutte le partenze di tutti i voli
-			for (Element el : departuretime) {
-					timelistgo.add(el.text());
-					if (timelistgo.get(b).contains("Andata")){
-						timelistgo.remove(b);
-						}
-					else{
-					b++;
+			for (Element el : depart) {
+				departList.add(el.text());
+				if (departList.get(b).contains("Andata")){
+					departList.remove(b);
 					}
+				else{
+				b++;
 				}
+			}
 			
 			//creo una lista con tutti gli arrivi di tutti i voli
-			for (Element el : arrivaltime) {
-				timelistback.add(el.text());
+			for (Element el : arrive) {
+				arriveList.add(el.text());
 				}
 			
 			//creo una lista delle agenzie con i migliori prezzi per ciascuno volo (solo nome agenzia)
@@ -264,51 +290,135 @@ public class Scraper implements Job {
 			//estraggo le informazioni dagli elementi(o dalle liste che ho creato prima) e le stampo a schermo
 			
 			for(i=0; i<flights.size(); i++){
-				//scrive nome volo
-				writer.print(flights.get(i).text() + ";");
-				writer.print(airport_part + ";");
-				writer.print(airport_dest + ";");
+				
+				//Orario e aeroporto di partenza del viaggio di andata
+				departureGoWords = departList.get(2*i).toString().split(" ");
+				//Orario e aeroporto di partenza del viaggio di ritorno
+				arrivalGoWords = arriveList.get(2*i).toString().split(" ");
+				//Orario e aeroporto di atterraggio del viaggio di andata
+				departureBackWords = departList.get(2*i+1).toString().split(" ");
+				//Orario e aeroporto di atterraggio del viaggio di ritorno
+				arrivalBackWords = arriveList.get(2*i+1).toString().split(" ");
+				
+				//FLIGHT
+				airlineCompany = flights.get(i).text();
+				writer.print(airlineCompany + ";");
+				
+				//DEPARTURE AIRPORT GO
+				departureAirportGo = departureGoWords[1];
+				writer.print(departureAirportGo + ";");
+				
+				//SCALI
+				//Il formato della stringa per gli scali può essere
+				//In caso di nessun scalo DIRETTO
+				//In caso di 1 o più scali # SCALO LISTA_DI_CITTA'
+				stopsGoWords = stops.get(2*i).text().toString().split(" ");		
+				stopsGo = "";				
+				//Nel caso in cui c'è almeno uno scalo vai a prendere dalla terza parola in poi
+				if (stopsGoWords.length != 1) {
+					for(k=2; k<stopsGoWords.length; k++) {
+						stopsGo = stopsGo + stopsGoWords[k] + " ";
+					}
+				}
+				writer.print(stopsGo + ";");
+				
+				
+				//ARRIVAL AIRPORT GO
+				//Se la stringa che sto analizzando contiene (+1) al suo interno
+				if (arrivalGoWords.length > 2) {
+					arrivalAirportGo = arrivalGoWords[2];
+				} else {
+					arrivalAirportGo = arrivalGoWords[1];
+				}
+				writer.print(arrivalAirportGo + ";");
+				
+				//DEPA AIRPORT BACK
+				departureAirportBack = departureBackWords[1];
+				writer.print(departureAirportBack + ";");
+				
+				//SCALI
+				stopsBackWords = stops.get(2*i+1).text().toString().split(" ");
+				stopsBack = "";
+				if (stopsBackWords.length != 1) {
+					for(k=2; k<stopsBackWords.length; k++) {
+						stopsBack = stopsBack + stopsBackWords[k] + " ";
+					}
+				}
+				writer.print(stopsBack + ";");
+				
+				//ARRIVAL AIRPORT BACK
+				//Se la stringa che sto analizzando contiene (+1) al suo interno
+				if (arrivalBackWords.length == 3) {
+					arrivalAirportBack = arrivalBackWords[2];
+				} else {
+					arrivalAirportBack = arrivalBackWords[1];
+				}
+				writer.print(arrivalAirportBack + ";");
+				
+				//DATE FROM
 				writer.print(datepart + ";");
+				//DATE BACK
 				writer.print(daterit + ";");
-				//scrive orari partenza di andata e ritorno
-				String[] wordsTgo1 = timelistgo.get(2*i).toString().split(" ");
-				String[] wordsTback1 = timelistback.get(2*i).toString().split(" ");
-				String[] wordsTgo2 = timelistgo.get(2*i+1).toString().split(" ");
-				String[] wordsTback2 = timelistback.get(2*i+1).toString().split(" ");
-				writer.print(wordsTgo1[0] + ";");
-				writer.print(wordsTback1[0] + ";");
-				writer.print(wordsTgo2[0] + ";");
-				writer.print(wordsTback2[0] + ";");
+				
+				//DEPARTURE TIME GO
+				departureTimeGo = departureGoWords[0];
+				writer.print(departureTimeGo + ";");
+				
+				//ARRIVAL TIME GO
+				arrivalTimeGo = arrivalGoWords[0];
+				writer.print(arrivalTimeGo + ";");
+				//DEPARTURE TIME BACK
+				departureTimeBack = departureBackWords[0];
+				writer.print(departureTimeBack + ";");
+				//ARRIVAL TIME BACK
+				arrivalTimeBack = arrivalBackWords[0];
+				writer.print(arrivalTimeBack + ";");
+				
 				//scrive nome e prezzo bestagency per il volo
-				String[] wordsA = bestagenciespriceslist.get(i).split(" ");
-				writer.print(bestagencieslist.get(i) + ";");
+				String[] wordsA;
+				if (check.get(i).text().toString().contains("prenotazioni")) {
+					doublebookings++;
+					writer.print(airlineCompany + ";");					
+				} else {
+					writer.print(bestagencieslist.get(i-doublebookings) + ";");
+				}
+				wordsA = check.get(i).text().toString().split(" ");
 				writer.print(wordsA[0] + ";");
 				writer.println();
 				//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
-				//prima faccio un controllo perchÃ¨ potrebbero non esserci agenzie oltre la migliore che vendono lo stesso volo
+				//prima faccio un controllo perche' potrebbero non esserci agenzie oltre la migliore che vendono lo stesso volo
 				if(otheragencies.get(i).select("a").size()!=0){
 					for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
-						//splitto la stringa in modo da avere il nome dell'agenzia separato dal prezzo, inoltre anche perchÃ¨ a volte nel box delle agenzie c'Ã¨ anche un lufthansa senza prezzo, in questo modo faccio si che non venga introdotto nella lista delle ota
+						//splitto la stringa in modo da avere il nome dell'agenzia separato dal prezzo, inoltre anche perche' 
+						//a volte nel box delle agenzie c'e' anche la stessa compagnia che vende il biglietto che non haa fianco
+						//segnato il prezzo, in questo modo faccio si che non venga introdotto nella lista delle ota
 						String[] words = otheragencies.get(i).select("a").get(j).text().split(" ");
-						if(words.length > 2){
+						lenghtWords = words.length;
+						if(lenghtWords > 2){
 							//scrive nome volo,aeroporta andata, destinazione, giorno andata, giorno ritorno
 							writer.print(flights.get(i).text() + ";");
-							writer.print(airport_part + ";");
-							writer.print(airport_dest + ";");
+							writer.print(departureAirportGo + ";");
+							writer.print(stopsGo + ";");
+							writer.print(arrivalAirportGo + ";");
+							writer.print(departureAirportBack + ";");
+							writer.print(stopsBack + ";");
+							writer.print(arrivalAirportBack + ";");
 							writer.print(datepart + ";");
 							writer.print(daterit + ";");
-							//scrive orari partenza di andata e ritorno
-							String[] wordsTgo3 = timelistgo.get(2*i).toString().split(" ");
-							String[] wordsTback3 = timelistback.get(2*i).toString().split(" ");
-							String[] wordsTgo4 = timelistgo.get(2*i+1).toString().split(" ");
-							String[] wordsTback4 = timelistback.get(2*i+1).toString().split(" ");
-							writer.print(wordsTgo3[0] + ";");
-							writer.print(wordsTback3[0] + ";");
-							writer.print(wordsTgo4[0] + ";");
-							writer.print(wordsTback4[0] + ";");
+							writer.print(departureTimeGo + ";");
+							writer.print(arrivalTimeGo + ";");
+							writer.print(departureTimeBack + ";");
+							writer.print(arrivalTimeBack + ";");
 							//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
-							writer.print(words[0] + ";");
-							writer.print(words[1] + ";");
+							//Ci può essere il caso in cui il nome di un aagenzia sia composto da diverse parole divise da uno spazio
+							//Il formato della stringa è NOME_OTA PREZZO €
+							price = words[lenghtWords-2];
+							ota = "";
+							for (k=0; k<(lenghtWords-2); k++) {
+								ota = ota + words[k];
+							}
+							writer.print(ota + ";");
+							writer.print(price + ";");
 							
 							writer.println();
 						}
