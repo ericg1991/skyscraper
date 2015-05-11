@@ -132,7 +132,7 @@ public class Scraper implements Job {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			}
-			timeToWait = 5;
+			timeToWait = 7;
 	        while (manager.getJobCount() > 0) {
 	        	timeToWait--;
 	   			System.out.println(timeToWait + " seconds left... ("
