@@ -447,5 +447,3 @@ public class Scraper implements Job {
 
 	}
 }
-
-
