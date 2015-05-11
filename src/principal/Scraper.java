@@ -132,7 +132,7 @@ public class Scraper implements Job {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			}
-			timeToWait = 5;
+			timeToWait = 7;
 	        while (manager.getJobCount() > 0) {
 	        	timeToWait--;
 	   			System.out.println(timeToWait + " seconds left... ("
@@ -365,13 +365,23 @@ public class Scraper implements Job {
 				writer.print(departureTimeGo + ";");
 				
 				//ARRIVAL TIME GO
-				arrivalTimeGo = arrivalGoWords[0];
+				//Nel caso si abbia arrivalGoWords = "22:05 (+1) SYD"
+				if (arrivalGoWords.length == 3) {
+					arrivalTimeGo = arrivalGoWords[0] + arrivalGoWords[1];
+				} else {
+					arrivalTimeGo = arrivalGoWords[0];
+				}
 				writer.print(arrivalTimeGo + ";");
 				//DEPARTURE TIME BACK
 				departureTimeBack = departureBackWords[0];
 				writer.print(departureTimeBack + ";");
 				//ARRIVAL TIME BACK
-				arrivalTimeBack = arrivalBackWords[0];
+				//Nel caso si abbia arrivalBackWords = "08:25 (+1) MXP"
+				if (arrivalBackWords.length == 3) {
+					arrivalTimeBack = arrivalBackWords[0] + arrivalBackWords[1];
+				} else {
+					arrivalTimeBack = arrivalBackWords[0];
+				}
 				writer.print(arrivalTimeBack + ";");
 				
 				//scrive nome e prezzo bestagency per il volo
