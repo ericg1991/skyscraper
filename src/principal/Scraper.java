@@ -92,7 +92,7 @@ public class Scraper implements Job {
 		}
 		JavaScriptJobManager manager = page.getEnclosingWindow()
 				.getJobManager();
-		int timeToWait = 25;
+		int timeToWait = 60;
 		while (manager.getJobCount() > 0) {
 			timeToWait--;
 			System.out.println(timeToWait + " seconds left... ("
