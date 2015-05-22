@@ -58,7 +58,8 @@ public class QuartzMain {
 			    .withIdentity("trigger1", "group1")
 			    .startNow()
 			    .withSchedule(simpleSchedule()
-			            .withIntervalInSeconds(f))
+			            .withIntervalInSeconds(f)
+			            .repeatForever())
 			    .endAt(endTime)
 			    .build();
 		sched.scheduleJob(jd,ct);
