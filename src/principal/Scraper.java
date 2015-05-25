@@ -224,7 +224,8 @@ public class Scraper implements Job {
 		int lenghtWords;
 		
 		//scrive data e ora della query al sito
-		writer.println(dateToString);
+		
+		writer.println(dateToString.replaceAll("_", "-"));
 	
 		//intestazioni della tabella
 		writer.println("Flight;DepartureAirportGo;StopsGo;ArrivalAirportGo;DepartureAirportBack;StopsBack;ArrivalAirportBack;DateGo;DateBack;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
