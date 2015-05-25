@@ -1,9 +1,7 @@
 package principal;
 
 import java.util.Date;
-
 import javax.xml.crypto.Data;
-
 import org.quartz.CronTrigger;
 import org.quartz.Job;
 import org.quartz.JobDetail;

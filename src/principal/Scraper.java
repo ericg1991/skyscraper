@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import org.apache.commons.logging.LogFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,6 +17,7 @@ import org.jsoup.select.Elements;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -23,6 +26,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
+
 import org.quartz.JobDataMap;
 
 public class Scraper implements Job {
@@ -81,6 +85,15 @@ public class Scraper implements Job {
 		Elements check = new Elements();
 		
 		Date date = new Date();
+		String dateToString;
+		String fileName;
+		SimpleDateFormat oldFormat;
+		String newFormat;
+		
+		oldFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
+		newFormat = oldFormat.format(date);
+		dateToString = newFormat.replaceAll(":", ".");
+		dateToString = newFormat.replaceAll("/", ".");
 		
 		HtmlPage page = null;
 		try {
@@ -168,10 +181,7 @@ public class Scraper implements Job {
 		//crea file di testo dove salverò tutti i risultati dell'attuale ricerca
 		PrintWriter writer = null;
 		try {
-			String dateToString = date.toString();
-			String fileName;
-			dateToString = dateToString.replaceAll(":", ".");
-			dateToString = dateToString.replaceAll("/", ".");
+			//String dateToString = date.toString();
 			fileName = airport_part + "_" + airport_dest + "_" + datepart + "_" + daterit + "_" + dateToString;
 			writer = new PrintWriter(fileName + ".csv");
 		} catch (FileNotFoundException e) {
@@ -214,7 +224,7 @@ public class Scraper implements Job {
 		int lenghtWords;
 		
 		//scrive data e ora della query al sito
-		writer.println("Research time: " + date.toString());
+		writer.println(dateToString);
 	
 		//intestazioni della tabella
 		writer.println("Flight;DepartureAirportGo;StopsGo;ArrivalAirportGo;DepartureAirportBack;StopsBack;ArrivalAirportBack;DateGo;DateBack;DeparturetimeGo;ArrivalTimeGo;DeparturetimeBack;ArrivalTimeBack;OTA;Price;");
