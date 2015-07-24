@@ -34,8 +34,7 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
 
 
-//public class QuartzMain extends TimerTask {
-public class QuartzMain {	
+public class QuartzMain extends TimerTask {
 	
 	static Date endTime;
 	
@@ -78,9 +77,9 @@ public class QuartzMain {
 		
 	}
 
-//	public QuartzMain() {
-//		// TODO Auto-generated constructor stub
-//	}
+	public QuartzMain() {
+		// TODO Auto-generated constructor stub
+	}
 
 	public static void main(String[] info) throws SchedulerException {
 		
@@ -96,10 +95,10 @@ public class QuartzMain {
 		time = Integer.parseInt(specifications.get(1));
 		endateString = specifications.get(2);
 		
-//		//Creating timer which executes once after 24 hours
-//        Timer timer = new Timer();
-//        TimerTask timerTask = new QuartzMain();
-//        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
+		//Creating timer which executes once after 24 hours
+        Timer timer = new Timer();
+        TimerTask timerTask = new QuartzMain();
+        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
         
 		
 		try{
@@ -256,11 +255,11 @@ private static void sendMail(String subject, String body) {
         }
     }
 
-//@Override
-//public void run() {
-//	sendMail("Controllo giornaliero", "Questo è il controllo giornaliero. Il programma sta girando correttamente.");
-//	
-//}
+@Override
+public void run() {
+	sendMail("Controllo giornaliero", "Questo è il controllo giornaliero. Il programma sta girando correttamente.");
+	
+}
 	
 
 }
