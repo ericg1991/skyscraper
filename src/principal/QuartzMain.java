@@ -33,7 +33,10 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
 
 
-public class QuartzMain extends TimerTask {	
+//public class QuartzMain extends TimerTask {
+public class QuartzMain {	
+	
+	static Date endTime;
 	
 	public QuartzMain(int pages, int frequency, String endate) throws Exception{
 		
@@ -56,7 +59,7 @@ public class QuartzMain extends TimerTask {
 		//creo la data aggiungo all'anno 2000 cos√¨ da avere 15+2000=2015 e tolgo uno al mese perch√® la data √® nel formato 0-11 quindi se siamo a maggio dovr√≤ avere 4 come numero e non 5
 		java.util.Calendar cal = new java.util.GregorianCalendar(yy + 2000, mm-1, dd);
 		//prendo la data del calendario e la metto in formato Date che √® quello riconosciuto dal trigger
-		Date endTime = cal.getTime();
+		endTime = cal.getTime();
 		
 		System.out.println("The scraper will end on " +  endTime);
 		// definisco il trigger con il suo nome, gruppo, data partenza, ogni quanto fa l'interrogazione e fine
@@ -74,9 +77,9 @@ public class QuartzMain extends TimerTask {
 		
 	}
 
-	public QuartzMain() {
-		// TODO Auto-generated constructor stub
-	}
+//	public QuartzMain() {
+//		// TODO Auto-generated constructor stub
+//	}
 
 	public static void main(String[] info) throws SchedulerException {
 		
@@ -92,10 +95,10 @@ public class QuartzMain extends TimerTask {
 		time = Integer.parseInt(specifications.get(1));
 		endate = specifications.get(2);
 		
-		//Creating timer which executes once after 24 hours
-        Timer timer = new Timer();
-        TimerTask timerTask = new QuartzMain();
-        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
+//		//Creating timer which executes once after 24 hours
+//        Timer timer = new Timer();
+//        TimerTask timerTask = new QuartzMain();
+//        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
         
 		
 		try{
@@ -106,7 +109,13 @@ public class QuartzMain extends TimerTask {
 			sendMail("Errore nell'avvio di QuartzMain", "C'Ë stata un'eccezione dell'avviare il programma.");
 		}
 		
-		sendMail("Programma finito con successo", "Il programma Ë terminato con successo.");
+		   Timer timerMail = new Timer();
+		    
+		   timerMail.schedule(new TimerTask() {
+		           public void run() {
+		        	   sendMail("Programma finito con successo", "Il programma Ë terminato con successo.");
+		           }
+		       }, endTime);
 	}
 	
 	//Legge i parametri della ricerca e mi ritorna quelli che dobbiamo settare nel programma
@@ -241,11 +250,11 @@ private static void sendMail(String subject, String body) {
         }
     }
 
-@Override
-public void run() {
-	sendMail("Controllo giornaliero", "Questo Ë il controllo giornaliero. Il programma sta girando correttamente.");
-	
-}
+//@Override
+//public void run() {
+//	sendMail("Controllo giornaliero", "Questo Ë il controllo giornaliero. Il programma sta girando correttamente.");
+//	
+//}
 	
 
 }
