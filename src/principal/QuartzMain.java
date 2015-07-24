@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 import java.util.Timer;
@@ -86,14 +87,14 @@ public class QuartzMain {
 		ArrayList<String> specifications = new ArrayList<String>();
 		int pages;
 		int time;
-		String endate;
+		String endateString;
 		
 		//Legge i parametri come tratte, numero di passeggeri e date
 		specifications = readParameters();
 		
 		pages = Integer.parseInt(specifications.get(0));
 		time = Integer.parseInt(specifications.get(1));
-		endate = specifications.get(2);
+		endateString = specifications.get(2);
 		
 //		//Creating timer which executes once after 24 hours
 //        Timer timer = new Timer();
@@ -102,20 +103,25 @@ public class QuartzMain {
         
 		
 		try{
-			new QuartzMain(pages, time, endate);
+			new QuartzMain(pages, time, endateString);
 		}
 		catch(Exception e){
 			e.getStackTrace();
 			sendMail("Errore nell'avvio di QuartzMain", "C'è stata un'eccezione dell'avviare il programma.");
 		}
 		
-		   Timer timerMail = new Timer();
+//		Date timeToRun = new Date(System.currentTimeMillis() + interval);
+		Timer timerMail = new Timer();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(endTime);
+		cal.add(Calendar.HOUR, -1);
+		Date timeToRun = cal.getTime();
 		    
-		   timerMail.schedule(new TimerTask() {
-		           public void run() {
-		        	   sendMail("Programma finito con successo", "Il programma è terminato con successo.");
-		           }
-		       }, endTime);
+		timerMail.schedule(new TimerTask() {
+			public void run() {
+				sendMail("Programma finito con successo", "Il programma è terminato con successo.");
+			}
+		}, timeToRun);
 	}
 	
 	//Legge i parametri della ricerca e mi ritorna quelli che dobbiamo settare nel programma
