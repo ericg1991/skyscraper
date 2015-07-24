@@ -10,6 +10,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -21,6 +23,7 @@ import javax.mail.internet.MimeMessage;
 
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
@@ -30,7 +33,7 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
 
 
-public class QuartzMain {	
+public class QuartzMain extends TimerTask {	
 	
 	public QuartzMain(int pages, int frequency, String endate) throws Exception{
 		
@@ -65,15 +68,17 @@ public class QuartzMain {
 			            .repeatForever())
 			    .endAt(endTime)
 			    .build();
+		
 		sched.scheduleJob(jd,ct);
 		sched.start();
 		
-		if( sched.isShutdown() ) {
-			sendMail("Tesi: il programma è terminato", "Congratulazioni! Lo scraper ha completato la ricerca.");
-		}
 	}
 
-	public static void main(String[] info){
+	public QuartzMain() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public static void main(String[] info) throws SchedulerException {
 		
 		ArrayList<String> specifications = new ArrayList<String>();
 		int pages;
@@ -87,6 +92,12 @@ public class QuartzMain {
 		time = Integer.parseInt(specifications.get(1));
 		endate = specifications.get(2);
 		
+		//Creating timer which executes once after 24 hours
+        Timer timer = new Timer();
+        TimerTask timerTask = new QuartzMain();
+        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
+        
+		
 		try{
 			new QuartzMain(pages, time, endate);
 		}
@@ -94,6 +105,8 @@ public class QuartzMain {
 			e.getStackTrace();
 			sendMail("Errore nell'avvio di QuartzMain", "C'è stata un'eccezione dell'avviare il programma.");
 		}
+		
+		sendMail("Programma finito con successo", "Il programma è terminato con successo.");
 	}
 	
 	//Legge i parametri della ricerca e mi ritorna quelli che dobbiamo settare nel programma
@@ -168,7 +181,9 @@ public class QuartzMain {
 			String line;
 			
 			while ((line = bufferedReader.readLine()) != null) {
-				array.add(line);
+				if (line.length()>0) {
+					array.add(line);
+				}
 			}
 			
 			fileReader.close();
@@ -225,5 +240,12 @@ private static void sendMail(String subject, String body) {
         	
         }
     }
+
+@Override
+public void run() {
+	sendMail("Controllo giornaliero", "Questo è il controllo giornaliero. Il programma sta girando correttamente.");
 	
+}
+	
+
 }

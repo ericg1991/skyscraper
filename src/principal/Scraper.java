@@ -106,7 +106,7 @@ public class Scraper implements Job {
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
-		domain = "http://www.skyscanner.de/";
+		domain = "http://www.skyscanner.dk/";
 		
 				
 	    
