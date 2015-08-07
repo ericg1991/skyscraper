@@ -8,11 +8,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -106,7 +110,7 @@ public class Scraper implements Job {
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
-		domain = "http://www.skyscanner.dk/";
+		domain = "dk";
 		
 				
 	    
@@ -176,7 +180,7 @@ public class Scraper implements Job {
 		checkDoubleBooking = doc.select("div.mainquote-wrapper.clearfix");
 	}
 	
-	private void writeCSVfile(String domain, String datepart, String daterit, String dateToString, String fileName, String pathDirectory){
+	private void writeCSVfile(String domain, int numPass, String datepart, String daterit, String dateToString, String fileName, String pathDirectory){
 		
 		String[] otherAgenciesWords;
 		String[] departureGoWords;
@@ -397,6 +401,7 @@ public class Scraper implements Job {
 				}
 				writer.print(arrivalTimeBack + ";");
 				
+				//OTA
 				//scrive nome e prezzo bestagency per il volo
 				if (checkDoubleBooking.get(i).text().toString().contains("required")) {
 					doublebookings++;
@@ -405,18 +410,21 @@ public class Scraper implements Job {
 					writer.print(bestagencieslist.get(i-doublebookings) + ";");
 				}
 				
-				
+				//PRICE
 				//Scrive il prezzo della miglior agenzia
 				bestAgenciesWords = checkDoubleBooking.get(i).text().toString().split(" ");
 				//Se ho più passeggeri, ho due diversi prezzi per le best agencies
 				//Nel caso di 1 passeggero avrei PREZZO AGENZIA
 				//Nel caso di più passeggeri avrei PREZZO_TOTALE totale PREZZO_SINGOLO AGENZIA
-				if( bestAgenciesWords.length < 4) {
+				//Nel caso contenga una doppia prenotazione abbiamo altri due casi
+				//Nel caso di 1 passeggero avrei PREZZO Select 2 bookings required
+				//Nel caso di più passeggeri PREZZO_TOTALE total PREZZO_SINGOLO Select 2 bookings required
+				if(numPass == 1) {
 					writer.print(bestAgenciesWords[0].substring(1) + ";");
 				} else {
 					writer.print(bestAgenciesWords[2].substring(1) + ";");
 				}
-				
+			
 //				writer.print(bestagenciespriceslist.get(i) + ";");
 				writer.println();
 				//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
@@ -432,7 +440,21 @@ public class Scraper implements Job {
 						if(otheragencies.get(i).select("a").toString().contains("Loading")){
 							checkCorrectness = false;
 						} else {
-							if(lenghtWords >= 2){
+							//Esistono casi in cui la OTA venga presentata senza prezzo
+							//Perchè la stessa compagnia presentata come best agencies
+							
+							//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
+							//Ci puo' essere il caso in cui il nome di un aagenzia sia composto da diverse parole
+							//divise da uno spazio
+							//Il formato della stringa e' NOME_OTA PREZZO
+							price = otherAgenciesWords[lenghtWords-1].substring(1);
+							ota = "";
+							for (k=0; k<(lenghtWords-1); k++) {
+								ota = ota + otherAgenciesWords[k];
+							}
+							
+//							//Se l'ultima parola non contiene numeri, non devo tenere conto dell'ota
+							if (isNumeric(price)) {
 								//scrive nome volo,aeroporta andata, destinazione, giorno andata, giorno ritorno
 								writer.print(flights.get(i).text() + ";");
 								writer.print(departureAirportGo + ";");
@@ -447,15 +469,6 @@ public class Scraper implements Job {
 								writer.print(arrivalTimeGo + ";");
 								writer.print(departureTimeBack + ";");
 								writer.print(arrivalTimeBack + ";");
-								//Scrive nome agenzia e prezzo (di quelle proposte come alternativa
-								//Ci puo' essere il caso in cui il nome di un aagenzia sia composto da diverse parole
-								//divise da uno spazio
-								//Il formato della stringa e' NOME_OTA PREZZO
-								price = otherAgenciesWords[lenghtWords-1].substring(1);
-								ota = "";
-								for (k=0; k<(lenghtWords-1); k++) {
-									ota = ota + otherAgenciesWords[k];
-								}
 								writer.print(ota + ";");
 								writer.print(price + ";");
 								writer.println();
@@ -595,8 +608,8 @@ public class Scraper implements Job {
 		System.out.println("Pagine richieste: " + pagesNumber);
 		System.out.println();
 		
-		//String URL = ("http://www.skyscanner.it/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
-		String URL = (domain + "transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=DE&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
+		//String URL = ("http://www.skyscanner.dk/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
+		String URL = ("http://www.skyscanner." + domain + "/transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=" + domain.toUpperCase() + "&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
 		
 		HtmlPage page = null;
 		try {
@@ -686,7 +699,7 @@ public class Scraper implements Job {
 				//Scrive il file csv contenente tutti i voli e le ota
 				fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
 				pathDirectory = datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
-				writeCSVfile(domain, datepart, daterit, dateToString, fileName, pathDirectory);
+				writeCSVfile(domain, numberPass, datepart, daterit, dateToString, fileName, pathDirectory);
 				
 				//Controlla se il file contiene la stringa "Caricamento in corso"
 				if (!checkCorrectness) {
@@ -717,6 +730,13 @@ public class Scraper implements Job {
 			}
 		}
 		return true;
+	}
+	
+	public static boolean isNumeric(String str) {  		
+		NumberFormat formatter = NumberFormat.getInstance();
+		ParsePosition pos = new ParsePosition(0);
+		formatter.parse(str, pos);
+		return str.length() == pos.getIndex();
 	}
 
 }

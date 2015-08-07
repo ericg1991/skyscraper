@@ -96,9 +96,9 @@ public class QuartzMain extends TimerTask {
 		endateString = specifications.get(2);
 		
 		//Creating timer which executes once after 24 hours
-        Timer timer = new Timer();
+        final Timer timerDaily = new Timer();
         TimerTask timerTask = new QuartzMain();
-        timer.scheduleAtFixedRate(timerTask, 0, 86400000);
+        timerDaily.scheduleAtFixedRate(timerTask, 0, 86400000);
         
 		
 		try{
@@ -119,6 +119,7 @@ public class QuartzMain extends TimerTask {
 		timerMail.schedule(new TimerTask() {
 			public void run() {
 				sendMail("Programma finito con successo", "Il programma è terminato con successo.");
+				timerDaily.cancel();
 			}
 		}, timeToRun);
 	}
