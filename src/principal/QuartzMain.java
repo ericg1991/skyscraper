@@ -92,7 +92,7 @@ public class QuartzMain extends TimerTask {
 		specifications = readParameters();
 		
 		pages = Integer.parseInt(specifications.get(0));
-		time = Integer.parseInt(specifications.get(1));
+		time = Integer.parseInt(specifications.get(1))*60;
 		endateString = specifications.get(2);
 		
 		//Creating timer which executes once after 24 hours

@@ -88,9 +88,9 @@ public class Scraper implements Job {
 	    List<String> lines = new ArrayList<>();
 		
 		//parte il ciclo di interrogazione a skyscanner
-		System.out.println();
-		System.out.println("GO!");
-		System.out.println();
+	    System.out.println();
+	    System.out.println("GO!");
+	    System.out.println();
 		
 		webClient = new WebClient(BrowserVersion.FIREFOX_31);
 		webClient.getOptions().setJavaScriptEnabled(true);
@@ -144,7 +144,7 @@ public class Scraper implements Job {
 		
 		webClient.close();
 
-		System.out.println("Done.");
+		doublePrint("Done.");
 
 	}
 	
@@ -217,7 +217,7 @@ public class Scraper implements Job {
 		try {
 			//String dateToString = date.toString();
 			if( createNewDirectory(pathDirectory) ){
-				writer = new PrintWriter(pathDirectory + "\\" + fileName + ".csv");
+				writer = new PrintWriter(pathDirectory + "/" + fileName + ".csv");
 			}
 		} catch (FileNotFoundException e) {
 			out.println("Eccenzione nella creazione del file csv - " + e.toString() + "\n");
@@ -538,7 +538,7 @@ public class Scraper implements Job {
 	
 	private void deleteFile(String fileName, String pathDirectory) {
 		try{
-    		File file = new File(pathDirectory + "\\" + fileName + ".csv");
+    		File file = new File(pathDirectory + "/" + fileName + ".csv");
     		if(file.delete()){
     			out.println(file.getName() + " è stato eliminato!");
     		}else{
@@ -552,7 +552,7 @@ public class Scraper implements Job {
 	
 	private int readLines(String fileName, String pathDirectory) {
 		try{
-			File file =new File(pathDirectory + "\\" + fileName + ".csv");
+			File file =new File(pathDirectory + "/" + fileName + ".csv");
  
     		if(file.exists()){
     		    FileReader fr = new FileReader(file);
@@ -600,13 +600,13 @@ public class Scraper implements Job {
 	        System.out.println("COULD NOT LOG!!");
 	    }
 		
-		System.out.println("Ricerca per aeroporto di partenza: "+ airport_part);
-		System.out.println("Ricerca per aeroporto di destinazione: "+ airport_dest);
-		System.out.println("Ricerca per data di partenza: "+ datepart);
-		System.out.println("Ricerca per aeroporto di ritorno: "+ daterit);
-		System.out.println("Ricerca per numero di passeggeri: "+ numberPass);
-		System.out.println("Pagine richieste: " + pagesNumber);
-		System.out.println();
+		doublePrint("Ricerca per aeroporto di partenza: "+ airport_part);
+		doublePrint("Ricerca per aeroporto di destinazione: "+ airport_dest);
+		doublePrint("Ricerca per data di partenza: "+ datepart);
+		doublePrint("Ricerca per aeroporto di ritorno: "+ daterit);
+		doublePrint("Ricerca per numero di passeggeri: "+ numberPass);
+		doublePrint("Pagine richieste: " + pagesNumber);
+		doublePrint("");
 		
 		//String URL = ("http://www.skyscanner.dk/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
 		String URL = ("http://www.skyscanner." + domain + "/transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=" + domain.toUpperCase() + "&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
@@ -618,11 +618,20 @@ public class Scraper implements Job {
 			out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
 		}
 		
+		out.println("Pagina richiesta tramite il comando: page = webClient.getPage(URL);");
+		
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
+		
 		int timeToWait = 60;
+		if (manager.getJobCount() <= 0) {
+			out.println("manager.getJobCount() <= 0 --> Non entra nel while");
+			sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
+					+ "il jobCount minore uguale a 0 nella prima pagina.");
+		}
 		while (manager.getJobCount() > 0) {
+			out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la prima pagina.");
 			timeToWait--;
-			System.out.println(timeToWait + " seconds left... ("
+			doublePrint(timeToWait + " seconds left... ("
 					+ manager.getJobCount() + " jobs left)\n");
 			try {
 				Thread.sleep(1000);
@@ -634,89 +643,103 @@ public class Scraper implements Job {
 				break;
 		}
 		
+		
 		//salvo la prima pagina in formato html
 		
-				PrintWriter wr = null;
-				try {
-					wr = new PrintWriter("Page1AsXml.html");
-				} catch (FileNotFoundException e1) {
-					e1.printStackTrace();
-					out.println("Eccenzione nella creazione della documento XML (Page1asXML) - " + e1.toString() + "\n");
-				}
-				wr.println(page.asXml());
-				wr.close();
-				
-				
-				//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
-				  
-				List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
-				int currentPage = 2;
-				while( !elements.isEmpty() && currentPage <= pagesNumber ){
-					HtmlElement element1 = elements.get(0);
-					
-					try {
-						page = element1.click();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-						out.println("Eccenzione nel cambiare il numero della pagina - " + e1.toString() + "\n");
-					}
-					timeToWait = 10;
-			        while (manager.getJobCount() > 0) {
-			        	timeToWait--;
-			   			System.out.println(timeToWait + " seconds left... ("
-			   					+ manager.getJobCount() + " jobs left)\n");
-			   			try {
-			   				Thread.sleep(1000);
-			   			} catch (InterruptedException e) {
-			   				e.printStackTrace();
-			   				out.println("Eccenzione sleep del thread - " + e.toString() + "\n");
-			   			}
-			   			if (timeToWait <= 0) {
-			   				break;
-			   			}	
-			        }
-			        
-			        PrintWriter wr3 = null;
-			        try {
-			        	wr3 = new PrintWriter("Page" + currentPage + "AsXml.html");
-			        } catch (FileNotFoundException e) {
-			        	e.printStackTrace();
-			        	out.println("Eccenzione nella creazione del documento XML (Page" + currentPage + "AsXml) - " + e.toString() + "\n");
-			        }
-			        wr3.println(page.asXml());
-			        wr3.close();
-			        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
-			        currentPage++;
-				}
-				
-				//Elimino le pagine create in una precedente interrogazione
-				int p = currentPage;
-				while (new File("Page" + p + "AsXml.html").exists()){
-					new File("Page" + p + "AsXml.html").delete();
-					p++;
-				}
-				
-				//Scrive il file csv contenente tutti i voli e le ota
-				fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
-				pathDirectory = datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
-				writeCSVfile(domain, numberPass, datepart, daterit, dateToString, fileName, pathDirectory);
-				
-				//Controlla se il file contiene la stringa "Caricamento in corso"
-				if (!checkCorrectness) {
-					out.println("File csv eliminato perchè conteneva 'Caricamento in corso'");
-					deleteFile(fileName, pathDirectory);
-				}
-				
-				//Controlla se il file è vuoto
-				int lines = readLines(fileName, pathDirectory);
-				
-				if(lines <= 2) {
-					out.println("Il documento csv è vuoto.");
-					deleteFile(fileName, pathDirectory);
-					sendMail("TESI: Documento excell vuoto", "Il contenuto del file excell non è stato pervenuto. Il file è stato eliminato.");
-				}
-				
-				out.close();
+		PrintWriter wr = null;
+		try {
+			wr = new PrintWriter("Page1AsXml.html");
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+			out.println("Eccenzione nella creazione della documento XML (Page1asXML) - " + e1.toString() + "\n");
+		}
+		out.println("Salvo la prima pagina in formato HTML.");
+		wr.println(page.asXml());
+		wr.close();
+		
+		
+		//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
+		out.println("Vado a salvare le pagine successive alla prima.");
+		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
+		int currentPage = 2;
+		while( !elements.isEmpty() && currentPage <= pagesNumber ){
+			HtmlElement element1 = elements.get(0);
+			
+			try {
+				page = element1.click();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				out.println("Eccenzione nel cambiare il numero della pagina - " + e1.toString() + "\n");
+			}
+			
+			timeToWait = 10;
+			if (manager.getJobCount() <= 0) {
+				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
+				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
+						+ "il jobCount minore uguale a 0 per la pagina n. " + currentPage + ".");
+			}
+			while (manager.getJobCount() > 0) {
+				out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la pagina numero " + currentPage);
+	        	timeToWait--;
+	   			doublePrint(timeToWait + " seconds left... ("
+	   					+ manager.getJobCount() + " jobs left)\n");
+	   			try {
+	   				Thread.sleep(1000);
+	   			} catch (InterruptedException e) {
+	   				e.printStackTrace();
+	   				out.println("Eccenzione sleep del thread - " + e.toString() + "\n");
+	   			}
+	   			if (timeToWait <= 0) {
+	   				break;
+	   			}	
+	        }
+	        
+	        PrintWriter wr3 = null;
+	        try {
+	        	wr3 = new PrintWriter("Page" + currentPage + "AsXml.html");
+	        } catch (FileNotFoundException e) {
+	        	e.printStackTrace();
+	        	out.println("Eccenzione nella creazione del documento XML (Page" + currentPage + "AsXml) - " + e.toString() + "\n");
+	        }
+	        out.println("Slavo la pagina n. " + currentPage + " in formato HTML.");
+	        wr3.println(page.asXml());
+	        wr3.close();
+	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
+	        currentPage++;
+		}
+		
+		out.println("Tutte le pagine sono state salvate.");
+		
+		//Elimino le pagine create in una precedente interrogazione
+		out.println("Elimino le pagine HTML di troppo create nella precedente interrogazioni");
+		int p = currentPage;
+		while (new File("Page" + p + "AsXml.html").exists()){
+			new File("Page" + p + "AsXml.html").delete();
+			p++;
+		}
+		
+		//Scrive il file csv contenente tutti i voli e le ota
+		out.println("Faccio il parsing delle pagine e salvo i dati in csv.");
+		fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
+		pathDirectory = datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
+		writeCSVfile(domain, numberPass, datepart, daterit, dateToString, fileName, pathDirectory);
+		
+		//Controlla se il file contiene la stringa "Caricamento in corso"
+		if (!checkCorrectness) {
+			out.println("File csv eliminato perchè conteneva 'Caricamento in corso'");
+			deleteFile(fileName, pathDirectory);
+		}
+		
+		//Controlla se il file è vuoto
+		int lines = readLines(fileName, pathDirectory);
+		out.println("Controllo il numero delle righe del file csv salvato.");
+		if(lines <= 2) {
+			out.println("Il documento csv è vuoto.");
+			deleteFile(fileName, pathDirectory);
+			sendMail("TESI: Documento excell vuoto", "Il contenuto del file excell non è stato pervenuto. Il file è stato eliminato.");
+		}
+		
+		out.close();
 	}
 	
 	//Metodo che crea una nuova cartella se non esiste già
@@ -732,11 +755,16 @@ public class Scraper implements Job {
 		return true;
 	}
 	
-	public static boolean isNumeric(String str) {  		
+	private static boolean isNumeric(String str) {  		
 		NumberFormat formatter = NumberFormat.getInstance();
 		ParsePosition pos = new ParsePosition(0);
 		formatter.parse(str, pos);
 		return str.length() == pos.getIndex();
+	}
+	
+	private void doublePrint(String string) {
+		System.out.println(string);
+		out.println(string);
 	}
 
 }
