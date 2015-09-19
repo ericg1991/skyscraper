@@ -623,11 +623,32 @@ public class Scraper implements Job {
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
 		
 		int timeToWait = 60;
-		if (manager.getJobCount() <= 0) {
-			out.println("manager.getJobCount() <= 0 --> Non entra nel while");
-			sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
-					+ "il jobCount minore uguale a 0 nella prima pagina.");
+		int attemps = 1;
+		
+		while (manager.getJobCount() <= 0) {
+			out.println("JobCount minore di zero. Prova di caricamento della pagina in corso.");
+			out.println("Tentativo numero: " + attemps);
+			attemps++;
+			try {
+				page = webClient.getPage(URL);
+			} catch (Exception e) {
+				out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
+			}
+			
+			out.println("Pagina richiesta tramite il comando: page = webClient.getPage(URL);");
+			
+			manager = page.getEnclosingWindow().getJobManager();
+			
+			if(attemps >= 5)
+				break;
 		}
+		
+		if (manager.getJobCount() <= 0) {
+			out.println("manager.getJobCount() <= 0 --> Non entra nel while nonostante i 5 tentativi.");
+			sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
+					+ "il jobCount minore uguale a 0 nella prima pagina, nonostante i 5 tentativi.");
+		}
+		
 		while (manager.getJobCount() > 0) {
 			out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la prima pagina.");
 			timeToWait--;
