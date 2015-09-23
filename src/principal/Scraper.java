@@ -582,6 +582,8 @@ public class Scraper implements Job {
 		String newFormat;
 		SimpleDateFormat oldFormat;
 		String dateToString;
+		String counterPath = "";
+		String nameFileXML = "";
 		
 		oldFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
 		newFormat = oldFormat.format(date);
@@ -647,6 +649,9 @@ public class Scraper implements Job {
 			out.println("manager.getJobCount() <= 0 --> Non entra nel while nonostante i 5 tentativi.");
 			sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
 					+ "il jobCount minore uguale a 0 nella prima pagina, nonostante i 5 tentativi.");
+			counterPath = "CountLessThanZero";
+			out.println("L'URL è il seguente: " + URL);
+			createNewDirectory(counterPath);
 		}
 		
 		while (manager.getJobCount() > 0) {
@@ -668,6 +673,7 @@ public class Scraper implements Job {
 		//salvo la prima pagina in formato html
 		
 		PrintWriter wr = null;
+		PrintWriter counterWriter = null;
 		try {
 			wr = new PrintWriter("Page1AsXml.html");
 		} catch (FileNotFoundException e1) {
@@ -678,6 +684,18 @@ public class Scraper implements Job {
 		wr.println(page.asXml());
 		wr.close();
 		
+		if (manager.getJobCount() <= 0) {
+			out.println("Salvo la pagina HTML nella cartella a parte visto il jobCount minore di zero.");
+			nameFileXML = airport_part + airport_dest + datepart + daterit + numberPass;
+			try {
+				counterWriter = new PrintWriter(counterPath + "/" + nameFileXML + "Page1AsXml.html");
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+				out.println("Eccenzione nella creazione della documento XML (Page1asXML) - " + e1.toString() + "\n");
+			}
+			counterWriter.println(page.asXml());
+			counterWriter.close();
+		}
 		
 		//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
 		out.println("Vado a salvare le pagine successive alla prima.");
@@ -722,11 +740,24 @@ public class Scraper implements Job {
 	        	e.printStackTrace();
 	        	out.println("Eccenzione nella creazione del documento XML (Page" + currentPage + "AsXml) - " + e.toString() + "\n");
 	        }
-	        out.println("Slavo la pagina n. " + currentPage + " in formato HTML.");
+	        out.println("Salvo la pagina n. " + currentPage + " in formato HTML.");
 	        wr3.println(page.asXml());
 	        wr3.close();
 	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
 	        currentPage++;
+		}
+		
+		if (manager.getJobCount() <= 0) {
+			out.println("Salvo la pagina n." + currentPage + " HTML nella cartella a parte visto il jobCount minore di zero.");
+			nameFileXML = airport_part + airport_dest + datepart + daterit + numberPass;
+			try {
+				counterWriter = new PrintWriter(counterPath + "/" + nameFileXML + "Page" + currentPage + "AsXml.html");
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+				out.println("Eccenzione nella creazione del documento XML (Page" + currentPage + "AsXml) - " + e1.toString() + "\n");
+			}
+			counterWriter.println(page.asXml());
+			counterWriter.close();
 		}
 		
 		out.println("Tutte le pagine sono state salvate.");
