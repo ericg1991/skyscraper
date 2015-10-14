@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -139,7 +140,11 @@ public class Scraper implements Job {
     		numberPass = Integer.parseInt(queryWords[4]);
     		
     		//Inizio ad interrogare le pagine html e salvo i dati su un file csv
-    		startQuery(datepart, daterit, airport_part, airport_dest, numberPass, pagesNumber, domain);
+    		try {
+				startQuery(datepart, daterit, airport_part, airport_dest, numberPass, pagesNumber, domain);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
     	}
 		
 		webClient.close();
@@ -574,7 +579,7 @@ public class Scraper implements Job {
  
 	}
 	
-	private void startQuery(String datepart, String daterit, String airport_part, String airport_dest, int numberPass, int pagesNumber, String domain) {
+	private void startQuery(String datepart, String daterit, String airport_part, String airport_dest, int numberPass, int pagesNumber, String domain) throws IOException {
 		
 		String fileName;
 		String pathDirectory;
@@ -582,8 +587,7 @@ public class Scraper implements Job {
 		String newFormat;
 		SimpleDateFormat oldFormat;
 		String dateToString;
-		String counterPath = "";
-		String nameFileXML = "";
+		String counterPath = "CountLessThanZero";
 		
 		oldFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
 		newFormat = oldFormat.format(date);
@@ -622,6 +626,9 @@ public class Scraper implements Job {
 		
 		out.println("Pagina richiesta tramite il comando: page = webClient.getPage(URL);");
 		
+		fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
+		pathDirectory = datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
+		
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
 		
 		int timeToWait = 60;
@@ -645,16 +652,14 @@ public class Scraper implements Job {
 				break;
 		}
 		
-		if (manager.getJobCount() <= 0) {
+		if (manager.getJobCount() < 0) {
 			out.println("manager.getJobCount() <= 0 --> Non entra nel while nonostante i 5 tentativi.");
 			sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
 					+ "il jobCount minore uguale a 0 nella prima pagina, nonostante i 5 tentativi.");
-			counterPath = "CountLessThanZero";
 			out.println("L'URL è il seguente: " + URL);
-			createNewDirectory(counterPath);
 		}
 		
-		while (manager.getJobCount() > 0) {
+		while (manager.getJobCount() >= 0) {
 			out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la prima pagina.");
 			timeToWait--;
 			doublePrint(timeToWait + " seconds left... ("
@@ -673,7 +678,6 @@ public class Scraper implements Job {
 		//salvo la prima pagina in formato html
 		
 		PrintWriter wr = null;
-		PrintWriter counterWriter = null;
 		try {
 			wr = new PrintWriter("Page1AsXml.html");
 		} catch (FileNotFoundException e1) {
@@ -684,17 +688,12 @@ public class Scraper implements Job {
 		wr.println(page.asXml());
 		wr.close();
 		
-		if (manager.getJobCount() <= 0) {
+		if (manager.getJobCount() < 0) {
 			out.println("Salvo la pagina HTML nella cartella a parte visto il jobCount minore di zero.");
-			nameFileXML = airport_part + airport_dest + datepart + daterit + numberPass;
-			try {
-				counterWriter = new PrintWriter(counterPath + "/" + nameFileXML + "Page1AsXml.html");
-			} catch (FileNotFoundException e1) {
-				e1.printStackTrace();
-				out.println("Eccenzione nella creazione della documento XML (Page1asXML) - " + e1.toString() + "\n");
-			}
-			counterWriter.println(page.asXml());
-			counterWriter.close();
+			createNewDirectory(counterPath);
+			File source = new File("Page1AsXml.html");
+	        File dest = new File( counterPath + "/" + fileName + "Page1AsXml.html");
+			Files.copy(source.toPath(), dest.toPath());
 		}
 		
 		//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
@@ -712,7 +711,7 @@ public class Scraper implements Job {
 			}
 			
 			timeToWait = 10;
-			if (manager.getJobCount() <= 0) {
+			if (manager.getJobCount() < 0) {
 				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
 				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
 						+ "il jobCount minore uguale a 0 per la pagina n. " + currentPage + ".");
@@ -747,17 +746,13 @@ public class Scraper implements Job {
 	        currentPage++;
 		}
 		
-		if (manager.getJobCount() <= 0) {
+		if (manager.getJobCount() < 0) {
 			out.println("Salvo la pagina n." + currentPage + " HTML nella cartella a parte visto il jobCount minore di zero.");
-			nameFileXML = airport_part + airport_dest + datepart + daterit + numberPass;
-			try {
-				counterWriter = new PrintWriter(counterPath + "/" + nameFileXML + "Page" + currentPage + "AsXml.html");
-			} catch (FileNotFoundException e1) {
-				e1.printStackTrace();
-				out.println("Eccenzione nella creazione del documento XML (Page" + currentPage + "AsXml) - " + e1.toString() + "\n");
-			}
-			counterWriter.println(page.asXml());
-			counterWriter.close();
+			
+			File source = new File("Page" + currentPage + "AsXml.html");
+	        File dest = new File(counterPath + "/" + fileName + "Page" + currentPage + "AsXml.html");
+			Files.copy(source.toPath(), dest.toPath());
+		
 		}
 		
 		out.println("Tutte le pagine sono state salvate.");
@@ -772,14 +767,23 @@ public class Scraper implements Job {
 		
 		//Scrive il file csv contenente tutti i voli e le ota
 		out.println("Faccio il parsing delle pagine e salvo i dati in csv.");
-		fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
-		pathDirectory = datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
 		writeCSVfile(domain, numberPass, datepart, daterit, dateToString, fileName, pathDirectory);
 		
 		//Controlla se il file contiene la stringa "Caricamento in corso"
 		if (!checkCorrectness) {
 			out.println("File csv eliminato perchè conteneva 'Caricamento in corso'");
 			deleteFile(fileName, pathDirectory);
+			String emptyPath = "emptyfiles";
+			out.println("Salvo file html in una cartella a parte.");
+			createNewDirectory(emptyPath);
+			int pagecounter;
+			for(pagecounter = 1; pagecounter <= pagesNumber; pagecounter++) {
+					
+				File source = new File("Page" + pagecounter + "AsXml.html");
+		        File dest = new File(emptyPath + "/" + fileName + "Page" + pagecounter + "AsXml.html");
+				Files.copy(source.toPath(), dest.toPath());
+				
+			}
 		}
 		
 		//Controlla se il file è vuoto
@@ -789,6 +793,17 @@ public class Scraper implements Job {
 			out.println("Il documento csv è vuoto.");
 			deleteFile(fileName, pathDirectory);
 			sendMail("TESI: Documento excell vuoto", "Il contenuto del file excell non è stato pervenuto. Il file è stato eliminato.");
+			String emptyPath = "emptyfiles";
+			out.println("Salvo file html in una cartella a parte.");
+			createNewDirectory(emptyPath);
+			int pagecounter;
+			for(pagecounter = 1; pagecounter <= pagesNumber; pagecounter++) {
+					
+				File source = new File("Page" + pagecounter + "AsXml.html");
+		        File dest = new File(emptyPath + "/" + fileName + "Page" + pagecounter + "AsXml.html");
+				Files.copy(source.toPath(), dest.toPath());
+				
+			}
 		}
 		
 		out.close();
@@ -818,5 +833,5 @@ public class Scraper implements Job {
 		System.out.println(string);
 		out.println(string);
 	}
-
+	
 }
