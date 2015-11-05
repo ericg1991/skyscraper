@@ -213,18 +213,19 @@ private static void sendMail(String subject, String body) {
 		//tesiericmaria@gmail.com
 		//t4L2bBd3x3a5ZGrG
 		
-		String from = "tesiericmaria";
+		String from = "tesiericmaria@outlook.it";
 		String pass = "t4L2bBd3x3a5ZGrG";
 		String[] to = { "Ayero.Maria@hotmail.it", "ericg@live.it" }; // list of recipient email addresses
 
 	    Properties props = System.getProperties();
-        String host = "smtp.gmail.com";
+        String host = "smtp.live.com";
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", host);
         props.put("mail.smtp.user", from);
         props.put("mail.smtp.password", pass);
         props.put("mail.smtp.port", "587");
         props.put("mail.smtp.auth", "true");
+        
 
         Session session = Session.getDefaultInstance(props);
         MimeMessage message = new MimeMessage(session);

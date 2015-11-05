@@ -42,6 +42,7 @@ import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.ThreadedRefreshHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
@@ -93,7 +94,7 @@ public class Scraper implements Job {
 	    System.out.println("GO!");
 	    System.out.println();
 		
-		webClient = new WebClient(BrowserVersion.FIREFOX_31);
+		webClient = new WebClient(BrowserVersion.CHROME);
 		webClient.getOptions().setJavaScriptEnabled(true);
 		webClient.getOptions().setRedirectEnabled(true);
 		webClient.getOptions().setCssEnabled(true);
@@ -111,9 +112,7 @@ public class Scraper implements Job {
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
-		domain = "dk";
-		
-				
+		domain = "UK";
 	    
 		try {
 			dataFile = new BufferedReader(new FileReader("dataFile.csv"));
@@ -179,7 +178,7 @@ public class Scraper implements Job {
 		arrive = doc.select("div.arrive");
 		bestagencies = doc.select("div.mainquote-wrapper.clearfix").select("a.ticketing-agent.mainquote-agent");
 		//bestagenciesprices = doc.select("div.mainquote-wrapper.clearfix").select("a.mainquote-price.big");
-		otheragencies = doc.select("div.details-group.clearfix");
+		otheragencies = doc.select("div.details-group-altquotes");
 		//Salvo tutti gli scali
 		stops = doc.select("div.leg-stops");
 		checkDoubleBooking = doc.select("div.mainquote-wrapper.clearfix");
@@ -194,7 +193,7 @@ public class Scraper implements Job {
 		String[] arrivalBackWords;
 		String[] stopsGoWords;
 		String[] stopsBackWords;
-		String[] bestAgenciesWords;
+		String[] bestAgenciesPriceWords;
 		String airlineCompany;
 		String departureAirportGo;
 		String departureAirportBack;
@@ -417,7 +416,8 @@ public class Scraper implements Job {
 				
 				//PRICE
 				//Scrive il prezzo della miglior agenzia
-				bestAgenciesWords = checkDoubleBooking.get(i).text().toString().split(" ");
+				
+				bestAgenciesPriceWords = checkDoubleBooking.get(i).text().toString().split(" ");
 				//Se ho più passeggeri, ho due diversi prezzi per le best agencies
 				//Nel caso di 1 passeggero avrei PREZZO AGENZIA
 				//Nel caso di più passeggeri avrei PREZZO_TOTALE totale PREZZO_SINGOLO AGENZIA
@@ -425,22 +425,23 @@ public class Scraper implements Job {
 				//Nel caso di 1 passeggero avrei PREZZO Select 2 bookings required
 				//Nel caso di più passeggeri PREZZO_TOTALE total PREZZO_SINGOLO Select 2 bookings required
 				if(numPass == 1) {
-					writer.print(bestAgenciesWords[0].substring(1) + ";");
+					writer.print(bestAgenciesPriceWords[0] + ";");
 				} else {
-					writer.print(bestAgenciesWords[2].substring(1) + ";");
+					writer.print(bestAgenciesPriceWords[2] + ";");
 				}
 			
 //				writer.print(bestagenciespriceslist.get(i) + ";");
 				writer.println();
-				//di ogni volo scrive le altre agenzie con prezzi peggiori rispetto alla migliore
-				//prima faccio un controllo perche' potrebbero non esserci agenzie oltre la migliore che vendono lo stesso volo
+				
+				//faccio un controllo perche' potrebbero non esserci agenzie oltre la migliore che vendono lo stesso volo
 				if(otheragencies.get(i).select("a").size()!=0){
 					for (j = 0; j < otheragencies.get(i).select("a").size(); j++) {
 						//splitto la stringa in modo da avere il nome dell'agenzia separato dal prezzo, inoltre
 						//a volte nel box delle agenzie c'e' la stessa compagnia che vende il biglietto senza avere
 						//segnato il prezzo
+						
 						otherAgenciesWords = otheragencies.get(i).select("a").get(j).text().split(" ");
-						lenghtWords = otherAgenciesWords.length;
+						lenghtWords = otherAgenciesWords.length - 1; //Non tengo conto del simbolo dell'euro
 						//Controllo se contiene la stringa "Caricamento in corso.."
 						if(otheragencies.get(i).select("a").toString().contains("Loading")){
 							checkCorrectness = false;
@@ -452,7 +453,8 @@ public class Scraper implements Job {
 							//Ci puo' essere il caso in cui il nome di un aagenzia sia composto da diverse parole
 							//divise da uno spazio
 							//Il formato della stringa e' NOME_OTA PREZZO
-							price = otherAgenciesWords[lenghtWords-1].substring(1);
+							
+							price = otherAgenciesWords[lenghtWords-1];
 							ota = "";
 							for (k=0; k<(lenghtWords-1); k++) {
 								ota = ota + otherAgenciesWords[k];
@@ -493,21 +495,32 @@ public class Scraper implements Job {
 	
 	private void sendMail(String subject, String body) {
 		
-		//tesiericmaria@gmail.com
+		//tesiericmaria@outlook.it
 		//t4L2bBd3x3a5ZGrG
 		
-		String from = "tesiericmaria";
+		String from = "tesiericmaria@outlook.it";
 		String pass = "t4L2bBd3x3a5ZGrG";
+		String mailhost = "smtp.live.com";
 		String[] to = { "Ayero.Maria@hotmail.it", "ericg@live.it" }; // list of recipient email addresses
 
 	    Properties props = System.getProperties();
-        String host = "smtp.gmail.com";
+        String host = "smtp.live.com";
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", host);
         props.put("mail.smtp.user", from);
         props.put("mail.smtp.password", pass);
         props.put("mail.smtp.port", "587");
         props.put("mail.smtp.auth", "true");
+
+//		Properties props = new Properties();   
+//	    props.setProperty("mail.transport.protocol", "smtp");   
+//	    props.setProperty("mail.host", mailhost); 
+//	    props.put("mail.smtp.starttls.enable", "true");  
+//	    props.put("mail.smtp.auth", "true");   
+//	    props.put("mail.smtp.port", "587");   
+//	    props.put("smtp.starttls.enable", "true");
+//	    props.put("mail.smtp.socketFactory.fallback", "false");   
+//	    props.setProperty("mail.smtp.quitwait", "false");
 
         Session session = Session.getDefaultInstance(props);
         MimeMessage message = new MimeMessage(session);
@@ -528,7 +541,7 @@ public class Scraper implements Job {
             message.setSubject(subject);
             message.setText(body);
             Transport transport = session.getTransport("smtp");
-            transport.connect(host, from, pass);
+            transport.connect(mailhost, 25, from, pass);
             transport.sendMessage(message, message.getAllRecipients());
             transport.close();
         } catch (AddressException ae) {
@@ -615,7 +628,7 @@ public class Scraper implements Job {
 		doublePrint("");
 		
 		//String URL = ("http://www.skyscanner.dk/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
-		String URL = ("http://www.skyscanner." + domain + "/transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=" + domain.toUpperCase() + "&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
+		String URL = ("http://www.skyscanner.net/transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=" + domain + "&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
 		
 		HtmlPage page = null;
 		try {
@@ -631,10 +644,10 @@ public class Scraper implements Job {
 		
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
 		
-		int timeToWait = 60;
+		int timeToWait = 30;
 		int attemps = 1;
 		
-		while (manager.getJobCount() <= 0) {
+		while (manager.getJobCount() < 0) {
 			out.println("JobCount minore di zero. Prova di caricamento della pagina in corso.");
 			out.println("Tentativo numero: " + attemps);
 			attemps++;
@@ -698,25 +711,45 @@ public class Scraper implements Job {
 		
 		//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
 		out.println("Vado a salvare le pagine successive alla prima.");
+		//*[@id="cbp-pagination"]/div[2]/ul/li[9]/button
+		//*[@id="cbp-pagination"]/div[2]/ul/li[10]/button
+		//html/body/div[3]/div[3]/div[1]/div/div[2]/section/div/div[4]/div[1]/div[6]/div[2]/ul/li[9]/button
+		//html/body/div[3]/div[3]/div[1]/div/div[2]/section/div/div[4]/div[1]/div[6]/div[2]/ul/li[10]/button
+		//*[@id="day-section"]/div/div[3]/div[5]/div[2]/ul/li[9]/button
 		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
+//		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("/html/body/div[3]/div[3]/div[1]/div/div[1]/section/div/div[3]/div[5]/div[2]/ul/li[2]/button");
+//		DomElement htmlButton = page.getElementById("Next page");
+//		List<DomElement> elements = (List<DomElement>) page.getElementsByIdAndOrName("Next page");
+		System.out.println(elements.size());
+        
 		int currentPage = 2;
+		
+		System.out.println(pagesNumber);
+//		while( htmlButton != null && currentPage <= pagesNumber ){
 		while( !elements.isEmpty() && currentPage <= pagesNumber ){
-			HtmlElement element1 = elements.get(0);
+			System.out.println("Sono entrato nel ciclo");
+			HtmlElement element1 = (HtmlElement) elements.get(0);
 			
 			try {
+				System.out.println("Sto caricando la seconda pagina.");
+//				page = (HtmlPage) ((HtmlElement) htmlButton).click();
 				page = element1.click();
 			} catch (IOException e1) {
 				e1.printStackTrace();
 				out.println("Eccenzione nel cambiare il numero della pagina - " + e1.toString() + "\n");
 			}
 			
+			manager = page.getEnclosingWindow().getJobManager();
+			
 			timeToWait = 10;
-			if (manager.getJobCount() < 0) {
-				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
-				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
-						+ "il jobCount minore uguale a 0 per la pagina n. " + currentPage + ".");
-			}
-			while (manager.getJobCount() > 0) {
+//			if (manager.getJobCount() < 0) {
+//				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
+//				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
+//						+ "il jobCount minore uguale a 0 per la pagina n. " + currentPage + ".");
+//			}
+			
+			System.out.println(manager.getJobCount());
+			while (manager.getJobCount() >= 0) {
 				out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la pagina numero " + currentPage);
 	        	timeToWait--;
 	   			doublePrint(timeToWait + " seconds left... ("
@@ -742,7 +775,7 @@ public class Scraper implements Job {
 	        out.println("Salvo la pagina n. " + currentPage + " in formato HTML.");
 	        wr3.println(page.asXml());
 	        wr3.close();
-	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
+//	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
 	        currentPage++;
 		}
 		
