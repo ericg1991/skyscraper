@@ -38,14 +38,17 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.ThreadedRefreshHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomElement;
+import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.background.JavaScriptJobManager;
+import com.mchange.v2.resourcepool.ResourcePool.Manager;
 
 public class Scraper implements Job {
 
@@ -66,15 +69,14 @@ public class Scraper implements Job {
 	ArrayList<String> departList = new ArrayList<String>();
 	ArrayList<String> arriveList = new ArrayList<String>();
 	ArrayList<String> bestagencieslist = new ArrayList<String>();
-//	ArrayList<String> bestagenciespriceslist = new ArrayList<String>();
-//	ArrayList<String> otherAgenciesNameList = new ArrayList<String>();
-//	ArrayList<String> otherAgenciesPriceList = new ArrayList<String>();
 	Document doc = null;
 	WebClient webClient;
 	File input;
 	PrintWriter out;
 	boolean checkCorrectness = true;
 	
+	int contatorefile = 0;
+
 	public void execute(JobExecutionContext jeContext) throws JobExecutionException {
 		
 		JobDataMap jdMap;
@@ -108,7 +110,7 @@ public class Scraper implements Job {
 		webClient.setCssErrorHandler(new SilentCssErrorHandler());
 		webClient.waitForBackgroundJavaScript(5000);
 		webClient.setRefreshHandler(new ThreadedRefreshHandler());
-		webClient.getCookieManager().setCookiesEnabled(true);
+		webClient.getCookieManager().setCookiesEnabled(false);
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
@@ -266,30 +268,7 @@ public class Scraper implements Job {
 				b++;
 				}
 			}
-			
-//			int lengthOtherAgencyWord = 0;
-//			String nameOTA;
-//			int t;
-//			//Creo una lista per gestire le altre agenzie
-//			for (Element el : otheragencies) {
-//				for (Element singleEl : el.select("a")) {
-//					//Controllo se contiene la stringa "Caricamento in corso.."
-//					if (singleEl.text().contains("Loading")) {
-//						checkCorrectness = false;
-//					} else {
-//						otherAgenciesWords = singleEl.text().split(" ");
-//						lengthOtherAgencyWord = otherAgenciesWords.length;
-//						//Ultimo elemento è il prezzo
-//						otherAgenciesPriceList.add(otherAgenciesWords[lengthOtherAgencyWord - 1].substring(1));
-//						nameOTA = "";
-//						for (t = 0; t < lengthOtherAgencyWord - 1; t++) {
-//							nameOTA = nameOTA + otherAgenciesWords[t];
-//						}
-//						otherAgenciesNameList.add(nameOTA);
-//					}
-//					
-//				}
-//			}
+		
 			
 			//creo una lista con tutti gli arrivi di tutti i voli
 			for (Element el : arrive) {
@@ -300,13 +279,7 @@ public class Scraper implements Job {
 			for (Element el : bestagencies) {
 				bestagencieslist.add(el.text());
 				}
-				
-//			//creo una lista delle agenzie con i migliori prezzi per ciascuno volo (solo prezzo agenzia)
-//			for (Element el : bestagenciesprices) {
-//				bestagenciespriceslist.add(el.text());
-//				System.out.println("prezzo: " + el.text());
-//				}
-			
+		
 			//estraggo le informazioni dagli elementi(o dalle liste che ho creato prima) e le stampo a schermo
 			for(i=0; i<flights.size(); i++){
 
@@ -494,64 +467,55 @@ public class Scraper implements Job {
 	}
 	
 	private void sendMail(String subject, String body) {
-		
-		//tesiericmaria@outlook.it
+		//tesiericmaria@gmail.com
 		//t4L2bBd3x3a5ZGrG
-		
-		String from = "tesiericmaria@outlook.it";
+
+		String from = "tesiericmaria@gmail.com";
 		String pass = "t4L2bBd3x3a5ZGrG";
-		String mailhost = "smtp.live.com";
+		String port  = "587";
 		String[] to = { "Ayero.Maria@hotmail.it", "ericg@live.it" }; // list of recipient email addresses
 
-	    Properties props = System.getProperties();
-        String host = "smtp.live.com";
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.host", host);
-        props.put("mail.smtp.user", from);
-        props.put("mail.smtp.password", pass);
-        props.put("mail.smtp.port", "587");
-        props.put("mail.smtp.auth", "true");
+		Properties props = System.getProperties();
+		String host = "smtp.gmail.com";
+		props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.host", host);
+		props.put("mail.smtp.user", from);
+		props.put("mail.smtp.password", pass);
+		props.put("mail.smtp.port", port);
+		props.put("mail.smtp.auth", "true");
+		props.put("mail.smtp.socketFactory.port", port);
+		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+		props.put("mail.smtp.socketFactory.fallback", "false");
 
-//		Properties props = new Properties();   
-//	    props.setProperty("mail.transport.protocol", "smtp");   
-//	    props.setProperty("mail.host", mailhost); 
-//	    props.put("mail.smtp.starttls.enable", "true");  
-//	    props.put("mail.smtp.auth", "true");   
-//	    props.put("mail.smtp.port", "587");   
-//	    props.put("smtp.starttls.enable", "true");
-//	    props.put("mail.smtp.socketFactory.fallback", "false");   
-//	    props.setProperty("mail.smtp.quitwait", "false");
 
-        Session session = Session.getDefaultInstance(props);
-        MimeMessage message = new MimeMessage(session);
+		Session session = Session.getDefaultInstance(props);
+		MimeMessage message = new MimeMessage(session);
 
-        try {
-            message.setFrom(new InternetAddress(from));
-            InternetAddress[] toAddress = new InternetAddress[to.length];
+		try {
+			message.setFrom(new InternetAddress(from));
+			InternetAddress[] toAddress = new InternetAddress[to.length];
 
-            // To get the array of addresses
-            for( int i = 0; i < to.length; i++ ) {
-                toAddress[i] = new InternetAddress(to[i]);
-            }
+			// To get the array of addresses
+			for( int i = 0; i < to.length; i++ ) {
+				toAddress[i] = new InternetAddress(to[i]);
+			}
 
-            for( int i = 0; i < toAddress.length; i++) {
-                message.addRecipient(Message.RecipientType.TO, toAddress[i]);
-            }
+			for( int i = 0; i < toAddress.length; i++) {
+				message.addRecipient(Message.RecipientType.TO, toAddress[i]);
+			}
 
-            message.setSubject(subject);
-            message.setText(body);
-            Transport transport = session.getTransport("smtp");
-            transport.connect(mailhost, 25, from, pass);
-            transport.sendMessage(message, message.getAllRecipients());
-            transport.close();
-        } catch (AddressException ae) {
-        	ae.printStackTrace();
-        	out.println("Eccezione nell'indirizzo mail - " + ae.toString());
-        } catch (MessagingException me) {
-        	me.printStackTrace();
-        	out.println("Eccezione nell'invio della mail - " + me.toString());
-        	
-        }
+			message.setSubject(subject);
+			message.setText(body);
+			Transport transport = session.getTransport("smtp");
+			transport.connect(host, from, pass);
+			transport.sendMessage(message, message.getAllRecipients());
+			transport.close();
+		} catch (AddressException ae) {
+			ae.printStackTrace();
+		} catch (MessagingException me) {
+			me.printStackTrace();
+
+		}
     }
 	
 	private void deleteFile(String fileName, String pathDirectory) {
@@ -637,6 +601,7 @@ public class Scraper implements Job {
 			out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
 		}
 		
+		
 		out.println("Pagina richiesta tramite il comando: page = webClient.getPage(URL);");
 		
 		fileName = dateToString + "_" + datepart + "_" + daterit + "_" + airport_part + "_" + airport_dest + "_" + "pass" + numberPass;
@@ -644,7 +609,7 @@ public class Scraper implements Job {
 		
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
 		
-		int timeToWait = 30;
+		int timeToWait = 90;
 		int attemps = 1;
 		
 		while (manager.getJobCount() < 0) {
@@ -653,6 +618,7 @@ public class Scraper implements Job {
 			attemps++;
 			try {
 				page = webClient.getPage(URL);
+				webClient.getCache().clear();
 			} catch (Exception e) {
 				out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
 			}
@@ -693,6 +659,7 @@ public class Scraper implements Job {
 		PrintWriter wr = null;
 		try {
 			wr = new PrintWriter("Page1AsXml.html");
+			
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 			out.println("Eccenzione nella creazione della documento XML (Page1asXML) - " + e1.toString() + "\n");
@@ -700,6 +667,12 @@ public class Scraper implements Job {
 		out.println("Salvo la prima pagina in formato HTML.");
 		wr.println(page.asXml());
 		wr.close();
+		
+		String pathCopiaFile = "Copia file";
+		createNewDirectory(pathCopiaFile);
+		File source2 = new File("Page1AsXml.html");
+        File dest2 = new File( pathCopiaFile + "/" + fileName + "Page1AsXml.html");
+		Files.copy(source2.toPath(), dest2.toPath());
 		
 		if (manager.getJobCount() < 0) {
 			out.println("Salvo la pagina HTML nella cartella a parte visto il jobCount minore di zero.");
@@ -711,29 +684,25 @@ public class Scraper implements Job {
 		
 		//Salvo tutte le pagine della ricerca in formato html, dopodichÃ¨ in uno step successivo ne farÃ² lo scraping
 		out.println("Vado a salvare le pagine successive alla prima.");
-		//*[@id="cbp-pagination"]/div[2]/ul/li[9]/button
-		//*[@id="cbp-pagination"]/div[2]/ul/li[10]/button
-		//html/body/div[3]/div[3]/div[1]/div/div[2]/section/div/div[4]/div[1]/div[6]/div[2]/ul/li[9]/button
-		//html/body/div[3]/div[3]/div[1]/div/div[2]/section/div/div[4]/div[1]/div[6]/div[2]/ul/li[10]/button
-		//*[@id="day-section"]/div/div[3]/div[5]/div[2]/ul/li[9]/button
-		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
-//		List<HtmlElement> elements = (List<HtmlElement>) page.getByXPath("/html/body/div[3]/div[3]/div[1]/div/div[1]/section/div/div[3]/div[5]/div[2]/ul/li[2]/button");
-//		DomElement htmlButton = page.getElementById("Next page");
-//		List<DomElement> elements = (List<DomElement>) page.getElementsByIdAndOrName("Next page");
-		System.out.println(elements.size());
-        
+		DomNodeList<DomElement> domList = page.getElementsByTagName("button");
+		
 		int currentPage = 2;
 		
-		System.out.println(pagesNumber);
-//		while( htmlButton != null && currentPage <= pagesNumber ){
-		while( !elements.isEmpty() && currentPage <= pagesNumber ){
+		while( !domList.isEmpty() && currentPage <= pagesNumber ){
 			System.out.println("Sono entrato nel ciclo");
-			HtmlElement element1 = (HtmlElement) elements.get(0);
 			
 			try {
 				System.out.println("Sto caricando la seconda pagina.");
-//				page = (HtmlPage) ((HtmlElement) htmlButton).click();
-				page = element1.click();
+				for (DomElement domElement : domList) {
+					String attr = domElement.getAttribute("title");
+					if(attr.equals("Next page")){
+						HtmlElement nextPageButton = (HtmlElement) domElement;
+						nextPageButton.click();
+					} else {
+						out.println("Non è stato trovato il bottone 'Next page', quindi non è stata salvata la seconda pagina");
+					}
+					
+				}
 			} catch (IOException e1) {
 				e1.printStackTrace();
 				out.println("Eccenzione nel cambiare il numero della pagina - " + e1.toString() + "\n");
@@ -741,7 +710,7 @@ public class Scraper implements Job {
 			
 			manager = page.getEnclosingWindow().getJobManager();
 			
-			timeToWait = 10;
+			timeToWait = 60;
 //			if (manager.getJobCount() < 0) {
 //				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
 //				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
@@ -775,6 +744,11 @@ public class Scraper implements Job {
 	        out.println("Salvo la pagina n. " + currentPage + " in formato HTML.");
 	        wr3.println(page.asXml());
 	        wr3.close();
+	        
+	        source2 = new File("Page" + currentPage + "AsXml.html");
+	        dest2 = new File( pathCopiaFile + "/" + fileName + "Page" + currentPage + "AsXml.html");
+			Files.copy(source2.toPath(), dest2.toPath());
+	        
 //	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
 	        currentPage++;
 		}

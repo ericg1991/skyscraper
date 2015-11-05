@@ -213,18 +213,22 @@ private static void sendMail(String subject, String body) {
 		//tesiericmaria@gmail.com
 		//t4L2bBd3x3a5ZGrG
 		
-		String from = "tesiericmaria@outlook.it";
+		String from = "tesiericmaria@gmail.com";
 		String pass = "t4L2bBd3x3a5ZGrG";
+		String port  = "587";
 		String[] to = { "Ayero.Maria@hotmail.it", "ericg@live.it" }; // list of recipient email addresses
 
 	    Properties props = System.getProperties();
-        String host = "smtp.live.com";
+	    String host = "smtp.gmail.com";
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", host);
         props.put("mail.smtp.user", from);
         props.put("mail.smtp.password", pass);
-        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.port", port);
         props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.socketFactory.port", port);
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        props.put("mail.smtp.socketFactory.fallback", "false");
         
 
         Session session = Session.getDefaultInstance(props);
