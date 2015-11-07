@@ -460,14 +460,14 @@ public class Scraper implements Job {
 				bestAgenciesPriceWords = checkDoubleBooking.get(i).text().toString().split(" ");
 				//Se ho più passeggeri, ho due diversi prezzi per le best agencies
 				//Nel caso di 1 passeggero avrei PREZZO AGENZIA
-				//Nel caso di più passeggeri avrei PREZZO_TOTALE totale PREZZO_SINGOLO AGENZIA
+				//Nel caso di più passeggeri avrei PREZZO_TOTALE € totale PREZZO_SINGOLO € AGENZIA
 				//Nel caso contenga una doppia prenotazione abbiamo altri due casi
 				//Nel caso di 1 passeggero avrei PREZZO Select 2 bookings required
-				//Nel caso di più passeggeri PREZZO_TOTALE total PREZZO_SINGOLO Select 2 bookings required
+				//Nel caso di più passeggeri PREZZO_TOTALE € total PREZZO_SINGOLO € Select 2 bookings required
 				if(numPass == 1) {
 					writer.print(bestAgenciesPriceWords[0] + ";");
 				} else {
-					writer.print(bestAgenciesPriceWords[2] + ";");
+					writer.print(bestAgenciesPriceWords[3] + ";");
 				}
 			
 //				writer.print(bestagenciespriceslist.get(i) + ";");
