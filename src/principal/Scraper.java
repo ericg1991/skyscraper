@@ -729,6 +729,12 @@ public class Scraper implements Job {
 		wr.println(page.asXml());
 		wr.close();
 		
+		String pathCopiaFile = "Copia file";
+		createNewDirectory(pathCopiaFile);
+		File source2 = new File("Page1AsXml.html");
+        File dest2 = new File( pathCopiaFile + "/" + fileName + "Page1AsXml.html");
+		Files.copy(source2.toPath(), dest2.toPath());
+		
 		if (manager.getJobCount() < 0) {
 			out.println("Salvo la pagina HTML nella cartella a parte visto il jobCount minore di zero.");
 			createNewDirectory(counterPath);
@@ -803,6 +809,10 @@ public class Scraper implements Job {
 	        out.println("Salvo la pagina n. " + currentPage + " in formato HTML.");
 	        wr3.println(page.asXml());
 	        wr3.close();
+	        
+	        source2 = new File("Page" + currentPage + "AsXml.html");
+	        dest2 = new File( pathCopiaFile + "/" + fileName + "Page" + currentPage + "AsXml.html");
+			Files.copy(source2.toPath(), dest2.toPath());
 	        
 //	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
 	        currentPage++;
