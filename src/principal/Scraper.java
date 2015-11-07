@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,7 +87,12 @@ public class Scraper implements Job {
 		String daterit;
 		String [] queryWords;
 		int pagesNumber;
+		int frequency;
 		int numberPass;
+		int frequencyPerLine;
+		int finalDelay;
+		int initialDelay;
+		int delayMax;
 		String domain;
 		BufferedReader dataFile = null;
 	    List<String> lines = new ArrayList<>();
@@ -114,7 +120,20 @@ public class Scraper implements Job {
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
+		frequency = (int) jdMap.get("frequency");
 		domain = "UK";
+		
+		File log = new File("log.txt");
+		out = null;
+	    try{
+	    	if (!log.exists()) {
+	            log.createNewFile();
+	    	}
+		    out = new PrintWriter(new FileWriter(log, true));
+		    
+	    } catch(IOException e) {
+	        System.out.println("COULD NOT LOG!!");
+	    }
 	    
 		try {
 			dataFile = new BufferedReader(new FileReader("dataFile.csv"));
@@ -131,6 +150,36 @@ public class Scraper implements Job {
 			out.println("Errore nel caricamento del file di lettura dei dati.");
 		}
     	
+    	//La frequenza di richieste per riga in millisecondi
+    	//La frequenza è in secondi
+    	doublePrint("Frequenza di tutte le interrogazioni: " + ((float) frequency) / 60 + " minuti");
+		frequencyPerLine = (frequency * 1000) / lines.size();
+		doublePrint("Minuti per ogni richiesta: " + (((float) frequencyPerLine ) / 1000) / 60);
+    	
+    	//Imposto il ritardo massimo di 2 minuti (120000 millisecondi)
+    	delayMax = 120000; 
+    	
+    	Random randomGenerator = new Random();
+    	//Genero un numero tra 0 a 120000 millisecondi (2 minuti)
+    	initialDelay = randomGenerator.nextInt(delayMax);
+		
+		//Numero casuale tra -2minuti e +2minuti (
+		int casual = randomGenerator.nextInt(delayMax*2) - delayMax;
+	
+		//DelayFinale = FrequenzaDiOgniLinea - Duratadell'interrogazione(3 minuti) - DealyInziale - o + un numero casuale
+		finalDelay = frequencyPerLine - 180000 - initialDelay + casual;
+		
+		doublePrint("Ritardo tra una richiesta e l'altra pari a: " + (((float) finalDelay) / 1000) / 60 + " minuti");
+    	
+		doublePrint("Ritardo inizale in minuti: " + (((float) initialDelay) / 1000) / 60);
+    	
+    	try {
+			Thread.sleep(initialDelay);
+		} catch (InterruptedException e1) {
+			out.println("Eccezione nel ritardare la prima interrogazione - " + e1.getMessage());
+		}
+          
+          
     	for(String query : lines) {
     		queryWords = query.split(";");
     		
@@ -146,6 +195,13 @@ public class Scraper implements Job {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+    		
+    		try {
+    			wait(finalDelay);
+    		} catch (InterruptedException e1) {
+    			out.println("Eccezione nel ritardare la prima interrogazione - " + e1.getMessage());
+    		}
+    		
     	}
 		
 		webClient.close();
@@ -257,6 +313,11 @@ public class Scraper implements Job {
 			
 			//Faccio il parsing della pagina e seleziono solo i dati che mi interessano
 			selectElements();
+			
+			String docToString = doc.toString();
+			
+			if (docToString.contains("Pardon Our Interruption") )
+				sendMail("Trovata pagina con avviso di BOT", "E' stata trovata una pagina con l'avviso di presenza di BOT.");
 			
 			//creo una lista con tutte le partenze di tutti i voli
 			for (Element el : depart) {
@@ -571,17 +632,9 @@ public class Scraper implements Job {
 		dateToString = newFormat.replaceAll(":", ".");
 		dateToString = newFormat.replaceAll("/", ".");
 		
-		File log = new File("log.txt");
-		out = null;
-	    try{
-	    	if (!log.exists()) {
-	            log.createNewFile();
-	    	}
-		    out = new PrintWriter(new FileWriter(log, true));
-		    out.println("******* " + dateToString +"******* " + "\n");
-	    } catch(IOException e) {
-	        System.out.println("COULD NOT LOG!!");
-	    }
+		doublePrint("Programma partito alle " + dateToString);
+	    
+	    out.println("******* " + dateToString +"******* " + "\n");
 		
 		doublePrint("Ricerca per aeroporto di partenza: "+ airport_part);
 		doublePrint("Ricerca per aeroporto di destinazione: "+ airport_dest);
@@ -693,15 +746,20 @@ public class Scraper implements Job {
 			
 			try {
 				System.out.println("Sto caricando la seconda pagina.");
+				boolean bottonFound = false;
 				for (DomElement domElement : domList) {
 					String attr = domElement.getAttribute("title");
 					if(attr.equals("Next page")){
 						HtmlElement nextPageButton = (HtmlElement) domElement;
 						nextPageButton.click();
-					} else {
-						out.println("Non è stato trovato il bottone 'Next page', quindi non è stata salvata la seconda pagina");
+						bottonFound = true;
 					}
 					
+				}
+				
+				if ( !bottonFound ) {
+					out.println("Non è stato trovato il bottone 'Next page', quindi non è stata salvata la seconda pagina");
+					sendMail("Bottone 'Next page' non trovato", "Non è stato trovato il bottone 'Next page', quindi non è stata salvata la seconda pagina");
 				}
 			} catch (IOException e1) {
 				e1.printStackTrace();

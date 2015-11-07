@@ -47,6 +47,7 @@ public class QuartzMain extends TimerTask {
 			    .build();
 		
 		jd.getJobDataMap().put("pagesNumber", pages);
+		jd.getJobDataMap().put("frequency", frequency);
 	
 		//settiamo la data di interruzione dello scraper
 		//prima splitto la stringa che ho ricevuto come data che sarà del tipo 150529
@@ -68,7 +69,8 @@ public class QuartzMain extends TimerTask {
 			    .startNow()
 			    .withSchedule(simpleSchedule()
 			            .withIntervalInSeconds(frequency)
-			            .repeatForever())
+			            .repeatForever()
+			            )
 			    .endAt(endTime)
 			    .build();
 		
