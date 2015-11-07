@@ -150,6 +150,7 @@ public class Scraper implements Job {
 			out.println("Errore nel caricamento del file di lettura dei dati.");
 		}
     	
+    	
     	//La frequenza di richieste per riga in millisecondi
     	//La frequenza è in secondi
     	doublePrint("Frequenza di tutte le interrogazioni: " + ((float) frequency) / 60 + " minuti");
@@ -157,21 +158,14 @@ public class Scraper implements Job {
 		doublePrint("Minuti per ogni richiesta: " + (((float) frequencyPerLine ) / 1000) / 60);
     	
     	//Imposto il ritardo massimo di 2 minuti (120000 millisecondi)
-    	delayMax = 120000; 
+    	delayMax = 1*60*1000; 
     	
     	Random randomGenerator = new Random();
+    	int casual;
+    	int durataInterrogazioneMilliSecondi = 10*1000;
+    	
     	//Genero un numero tra 0 a 120000 millisecondi (2 minuti)
     	initialDelay = randomGenerator.nextInt(delayMax);
-		
-		//Numero casuale tra -2minuti e +2minuti (
-		int casual = randomGenerator.nextInt(delayMax*2) - delayMax;
-	
-		//DelayFinale = FrequenzaDiOgniLinea - Duratadell'interrogazione(3 minuti) - DealyInziale - o + un numero casuale
-		finalDelay = frequencyPerLine - 180000 - initialDelay + casual;
-		
-		doublePrint("Ritardo tra una richiesta e l'altra pari a: " + (((float) finalDelay) / 1000) / 60 + " minuti");
-    	
-		doublePrint("Ritardo inizale in minuti: " + (((float) initialDelay) / 1000) / 60);
     	
     	try {
 			Thread.sleep(initialDelay);
@@ -189,6 +183,16 @@ public class Scraper implements Job {
     		airport_dest = queryWords[3];
     		numberPass = Integer.parseInt(queryWords[4]);
     		
+    		//Numero casuale tra -2minuti e +2minuti (
+    		casual = randomGenerator.nextInt(delayMax*2) - delayMax;
+    	
+    		//DelayFinale = FrequenzaDiOgniLinea - Duratadell'interrogazione(3 minuti) - DealyInziale - o + un numero casuale
+    		finalDelay = frequencyPerLine - durataInterrogazioneMilliSecondi - initialDelay + casual;
+    		
+    		doublePrint("Ritardo tra una richiesta e l'altra pari a: " + (((float) finalDelay) / 1000) / 60 + " minuti");
+        	
+    		doublePrint("Ritardo inizale in minuti: " + (((float) initialDelay) / 1000) / 60);
+    		
     		//Inizio ad interrogare le pagine html e salvo i dati su un file csv
     		try {
 				startQuery(datepart, daterit, airport_part, airport_dest, numberPass, pagesNumber, domain);
@@ -197,13 +201,13 @@ public class Scraper implements Job {
 			}
     		
     		try {
-    			wait(finalDelay);
+    			Thread.sleep(finalDelay);
     		} catch (InterruptedException e1) {
     			out.println("Eccezione nel ritardare la prima interrogazione - " + e1.getMessage());
     		}
     		
     	}
-		
+    	out.close();
 		webClient.close();
 
 		doublePrint("Done.");
@@ -627,6 +631,9 @@ public class Scraper implements Job {
 		String dateToString;
 		String counterPath = "CountLessThanZero";
 		
+		int timeToWaitFistPage = 10;
+		int timeToWaitSecondPage = 10;
+		
 		oldFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
 		newFormat = oldFormat.format(date);
 		dateToString = newFormat.replaceAll(":", ".");
@@ -662,7 +669,6 @@ public class Scraper implements Job {
 		
 		JavaScriptJobManager manager = page.getEnclosingWindow().getJobManager();
 		
-		int timeToWait = 90;
 		int attemps = 1;
 		
 		while (manager.getJobCount() < 0) {
@@ -693,8 +699,8 @@ public class Scraper implements Job {
 		
 		while (manager.getJobCount() >= 0) {
 			out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la prima pagina.");
-			timeToWait--;
-			doublePrint(timeToWait + " seconds left... ("
+			timeToWaitFistPage--;
+			doublePrint(timeToWaitFistPage + " seconds left... ("
 					+ manager.getJobCount() + " jobs left)\n");
 			try {
 				Thread.sleep(1000);
@@ -702,7 +708,7 @@ public class Scraper implements Job {
 				e.printStackTrace();
 				out.println("Eccenzione sleep del thread - " + e.toString() + "\n");
 			}
-			if (timeToWait <= 0)
+			if (timeToWaitFistPage <= 0)
 				break;
 		}
 		
@@ -768,7 +774,6 @@ public class Scraper implements Job {
 			
 			manager = page.getEnclosingWindow().getJobManager();
 			
-			timeToWait = 60;
 //			if (manager.getJobCount() < 0) {
 //				out.println("manager.getJobCount() <= 0 --> Non entra nel while per la pagina " + currentPage);
 //				sendMail("TESI: jobCount < 0", "Nella tratta " + airport_part + " " + airport_dest+ " " + datepart + " "+ daterit+ " " + numberPass + "è stato trovato"
@@ -778,8 +783,8 @@ public class Scraper implements Job {
 			System.out.println(manager.getJobCount());
 			while (manager.getJobCount() >= 0) {
 				out.println("manager.getJobCount() > 0 --> Entrato correttamente nel while per la pagina numero " + currentPage);
-	        	timeToWait--;
-	   			doublePrint(timeToWait + " seconds left... ("
+				timeToWaitSecondPage--;
+	   			doublePrint(timeToWaitSecondPage + " seconds left... ("
 	   					+ manager.getJobCount() + " jobs left)\n");
 	   			try {
 	   				Thread.sleep(1000);
@@ -787,7 +792,7 @@ public class Scraper implements Job {
 	   				e.printStackTrace();
 	   				out.println("Eccenzione sleep del thread - " + e.toString() + "\n");
 	   			}
-	   			if (timeToWait <= 0) {
+	   			if (timeToWaitSecondPage <= 0) {
 	   				break;
 	   			}	
 	        }
@@ -871,7 +876,6 @@ public class Scraper implements Job {
 			}
 		}
 		
-		out.close();
 	}
 	
 	//Metodo che crea una nuova cartella se non esiste già
