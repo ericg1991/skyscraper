@@ -117,6 +117,7 @@ public class Scraper implements Job {
 		webClient.waitForBackgroundJavaScript(5000);
 		webClient.setRefreshHandler(new ThreadedRefreshHandler());
 		webClient.getCookieManager().setCookiesEnabled(false);
+		webClient.getOptions().setPopupBlockerEnabled(true);
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
@@ -158,11 +159,12 @@ public class Scraper implements Job {
 		doublePrint("Minuti per ogni richiesta: " + (((float) frequencyPerLine ) / 1000) / 60);
     	
     	//Imposto il ritardo massimo di 2 minuti (120000 millisecondi)
-    	delayMax = 1*60*1000; 
+    	delayMax = 2*60*1000; 
     	
     	Random randomGenerator = new Random();
     	int casual;
-    	int durataInterrogazioneMilliSecondi = 10*1000;
+    	//Durata media di 3 minuti
+    	int durataInterrogazioneMilliSecondi = 4*60*1000;
     	
     	//Genero un numero tra 0 a 120000 millisecondi (2 minuti)
     	initialDelay = randomGenerator.nextInt(delayMax);
@@ -631,8 +633,8 @@ public class Scraper implements Job {
 		String dateToString;
 		String counterPath = "CountLessThanZero";
 		
-		int timeToWaitFistPage = 10;
-		int timeToWaitSecondPage = 10;
+		int timeToWaitFistPage = 90;
+		int timeToWaitSecondPage = 60;
 		
 		oldFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
 		newFormat = oldFormat.format(date);
@@ -727,12 +729,6 @@ public class Scraper implements Job {
 		wr.println(page.asXml());
 		wr.close();
 		
-		String pathCopiaFile = "Copia file";
-		createNewDirectory(pathCopiaFile);
-		File source2 = new File("Page1AsXml.html");
-        File dest2 = new File( pathCopiaFile + "/" + fileName + "Page1AsXml.html");
-		Files.copy(source2.toPath(), dest2.toPath());
-		
 		if (manager.getJobCount() < 0) {
 			out.println("Salvo la pagina HTML nella cartella a parte visto il jobCount minore di zero.");
 			createNewDirectory(counterPath);
@@ -807,10 +803,6 @@ public class Scraper implements Job {
 	        out.println("Salvo la pagina n. " + currentPage + " in formato HTML.");
 	        wr3.println(page.asXml());
 	        wr3.close();
-	        
-	        source2 = new File("Page" + currentPage + "AsXml.html");
-	        dest2 = new File( pathCopiaFile + "/" + fileName + "Page" + currentPage + "AsXml.html");
-			Files.copy(source2.toPath(), dest2.toPath());
 	        
 //	        elements = (List<HtmlElement>) page.getByXPath("//*[@id=\"cbp-pagination\"]/div[2]/ul/li/button[@title=\"Next page\"]");
 	        currentPage++;
