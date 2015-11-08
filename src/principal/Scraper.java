@@ -114,10 +114,9 @@ public class Scraper implements Job {
 		webClient.waitForBackgroundJavaScriptStartingBefore(10000);
 		webClient.setJavaScriptTimeout(2147483647);
 		webClient.setCssErrorHandler(new SilentCssErrorHandler());
-		webClient.waitForBackgroundJavaScript(5000);
+		webClient.waitForBackgroundJavaScript(50000);
 		webClient.setRefreshHandler(new ThreadedRefreshHandler());
-		webClient.getCookieManager().setCookiesEnabled(false);
-		webClient.getOptions().setPopupBlockerEnabled(true);
+//		webClient.getCookieManager().setCookiesEnabled(false);
 		
 		jdMap = jeContext.getJobDetail().getJobDataMap();
 		pagesNumber = (int) jdMap.get("pagesNumber");
@@ -164,7 +163,7 @@ public class Scraper implements Job {
     	Random randomGenerator = new Random();
     	int casual;
     	//Durata media di 3 minuti
-    	int durataInterrogazioneMilliSecondi = 4*60*1000;
+    	int durataInterrogazioneMilliSecondi = 3*60*1000;
     	
     	//Genero un numero tra 0 a 120000 millisecondi (2 minuti)
     	initialDelay = randomGenerator.nextInt(delayMax);
@@ -654,7 +653,8 @@ public class Scraper implements Job {
 		doublePrint("");
 		
 		//String URL = ("http://www.skyscanner.dk/trasporti/voli/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/");
-		String URL = ("http://www.skyscanner.net/transport/flights/" + airport_part + "/" + airport_dest + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&market=" + domain + "&locale=en-GB&currency=EUR&_ga=1.48008167.1740910371.1433161688");
+		String URL = ("http://www.skyscanner.net/transport/flights/" + airport_part.toLowerCase() + "/" + airport_dest.toLowerCase() + "/" + datepart + "/" + daterit + "/?adults=" + numberPass + "&market=" + domain + "&currency=EUR");
+		//String URL = ("http://www.skyscanner.net/transport/flights/lhr/cdg/151205/151208/airfares-from-london-heathrow-to-paris-charles-de-gaulle-in-december-2015.html?adults=" + numberPass + "&children=0&infants=0&cabinclass=economy&rtn=1&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&locale=en-GB&currency=EUR&market=UK");
 		
 		HtmlPage page = null;
 		try {
@@ -662,7 +662,6 @@ public class Scraper implements Job {
 		} catch (Exception e) {
 			out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
 		}
-		
 		
 		out.println("Pagina richiesta tramite il comando: page = webClient.getPage(URL);");
 		
@@ -679,7 +678,6 @@ public class Scraper implements Job {
 			attemps++;
 			try {
 				page = webClient.getPage(URL);
-				webClient.getCache().clear();
 			} catch (Exception e) {
 				out.println("Eccenzione nel caricamento della pagina - " + e.toString() + "\n");
 			}
@@ -757,7 +755,7 @@ public class Scraper implements Job {
 				boolean bottonFound = false;
 				for (DomElement domElement : domList) {
 					String attr = domElement.getAttribute("title");
-					if(attr.equals("Next page")){
+					if(attr.equals("Next page") && !bottonFound){
 						HtmlElement nextPageButton = (HtmlElement) domElement;
 						nextPageButton.click();
 						bottonFound = true;
